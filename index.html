@@ -1,0 +1,3909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arborist — Decision Tree Cultivator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Literata:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f110f;
+  --surface: #171a17;
+  --surface2: #1e221e;
+  --surface3: #252a25;
+  --border: #2d332d;
+  --border-hi: #3d453d;
+  --text: #d4dcd0;
+  --text-dim: #8a9486;
+  --text-faint: #5a6358;
+  --green: #4caf50;
+  --green-dim: rgba(76,175,80,0.12);
+  --green-bright: #66cc6a;
+  --amber: #c9a227;
+  --amber-dim: rgba(201,162,39,0.12);
+  --red: #c45e5e;
+  --red-dim: rgba(196,94,94,0.10);
+  --cyan: #5aadad;
+  --cyan-dim: rgba(90,173,173,0.10);
+  --blue: #5a8fbf;
+  --blue-dim: rgba(90,143,191,0.10);
+  --purple: #8a7abf;
+  --mono: 'IBM Plex Mono', monospace;
+  --display: 'Literata', serif;
+  --body: 'DM Sans', sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:var(--bg); color:var(--text);
+  font-family:var(--body); height:100vh; overflow:hidden;
+}
+
+/* ── LAYOUT ── */
+.app { display:flex; height:100vh; }
+
+.panel-left {
+  width:280px; flex-shrink:0; background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column; overflow-y:auto;
+  scrollbar-width:thin; scrollbar-color:var(--border) transparent;
+}
+
+.logo {
+  padding:1.2rem 1rem 0.8rem; border-bottom:1px solid var(--border);
+  text-align:center;
+}
+.logo h1 {
+  font-family:var(--display); font-size:1.4rem; font-weight:900;
+  letter-spacing:-0.03em; color:var(--text);
+}
+.logo h1 span { color:var(--green); }
+.logo .sub {
+  font-family:var(--mono); font-size:0.6rem; color:var(--text-faint);
+  letter-spacing:0.08em; text-transform:uppercase; margin-top:0.2rem;
+}
+
+.section { padding:0.8rem 1rem; border-bottom:1px solid var(--border); }
+.section-label {
+  font-family:var(--mono); font-size:0.62rem; font-weight:600;
+  color:var(--text-faint); text-transform:uppercase; letter-spacing:0.06em;
+  margin-bottom:0.5rem;
+}
+
+.example-btn {
+  display:block; width:100%; padding:0.45rem 0.6rem; margin-bottom:0.3rem;
+  background:var(--surface2); border:1px solid var(--border); border-radius:5px;
+  color:var(--text-dim); font-family:var(--body); font-size:0.72rem;
+  cursor:pointer; text-align:left; transition:all 0.15s;
+}
+.example-btn:hover { border-color:var(--green); color:var(--text); }
+.example-btn .ex-name { font-weight:600; color:var(--text); }
+.example-btn .ex-desc { font-size:0.65rem; color:var(--text-faint); margin-top:0.15rem; }
+
+.drop-zone {
+  border:1.5px dashed var(--border-hi); border-radius:6px;
+  padding:0.8rem; text-align:center; margin-top:0.5rem;
+  font-size:0.68rem; color:var(--text-faint); cursor:pointer;
+  transition:all 0.2s;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color:var(--green); color:var(--green); background:var(--green-dim);
+}
+
+.ctrl-row { display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem; }
+.ctrl-row label {
+  font-family:var(--mono); font-size:0.62rem; color:var(--text-faint);
+  min-width:80px; text-transform:uppercase; letter-spacing:0.04em;
+}
+.ctrl-row select, .ctrl-row input[type="number"] {
+  flex:1; background:var(--bg); border:1px solid var(--border);
+  color:var(--text); padding:0.3rem 0.4rem; border-radius:4px;
+  font-family:var(--mono); font-size:0.68rem; outline:none;
+}
+.ctrl-row select:focus, .ctrl-row input:focus { border-color:var(--green); }
+
+.grow-btn {
+  display:block; width:100%; padding:0.55rem; border:none; border-radius:5px;
+  background:var(--green); color:#111; font-family:var(--mono); font-size:0.78rem;
+  font-weight:700; cursor:pointer; transition:all 0.15s; margin-top:0.5rem;
+  letter-spacing:0.02em;
+}
+.grow-btn:hover { filter:brightness(1.15); }
+.grow-btn:active { transform:scale(0.97); }
+.grow-btn:disabled { opacity:0.4; cursor:not-allowed; filter:none; }
+
+.stats {
+  padding:0.6rem 1rem; border-bottom:1px solid var(--border);
+  font-family:var(--mono); font-size:0.62rem; color:var(--text-faint);
+  display:flex; flex-wrap:wrap; gap:0.3rem 1rem;
+}
+.stat-val { color:var(--green-bright); font-weight:600; }
+
+/* ── MAIN ── */
+.main {
+  flex:1; display:flex; flex-direction:column; position:relative;
+  background:var(--bg);
+  background-image: radial-gradient(circle, rgba(45,51,45,0.4) 0.6px, transparent 0.6px);
+  background-size:20px 20px;
+}
+
+.main-toolbar {
+  display:flex; align-items:center; gap:0.5rem;
+  padding:0.4rem 0.8rem; background:var(--surface);
+  border-bottom:1px solid var(--border);
+  font-family:var(--mono); font-size:0.65rem; color:var(--text-dim);
+  position:relative; z-index:12;
+}
+.main-toolbar .spacer { flex:1; }
+.tb-btn {
+  padding:0.3rem 0.6rem; border:1px solid var(--border); border-radius:4px;
+  background:var(--surface2); color:var(--text-dim); font-family:var(--mono);
+  font-size:0.62rem; cursor:pointer; transition:all 0.15s;
+}
+.tb-btn:hover { border-color:var(--green); color:var(--text); }
+
+.tree-container {
+  flex:1; overflow:hidden; position:relative;
+  cursor:grab;
+}
+.tree-container.panning { cursor:grabbing; }
+.tree-container svg { display:block; position:absolute; top:0; left:0; }
+
+.empty-state {
+  position:absolute; top:0; left:0; right:0; bottom:0;
+  display:flex; align-items:center; justify-content:center;
+  overflow-y:auto;
+}
+.splash {
+  max-width:560px; width:100%; padding:2rem 1.5rem;
+}
+.splash-hero {
+  text-align:center; margin-bottom:1.5rem;
+}
+.splash-icon { font-size:2.5rem; opacity:0.3; margin-bottom:0.3rem; }
+.splash-hero h2 {
+  font-family:var(--display); font-size:1.3rem; color:var(--text-dim);
+  font-weight:700; margin:0 0 0.3rem;
+}
+.splash-hero p {
+  font-family:var(--mono); font-size:0.62rem; color:var(--text-faint);
+  margin:0;
+}
+.splash-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:1.2rem;
+}
+.splash-section {}
+.splash-label {
+  font-family:var(--mono); font-size:0.58rem; font-weight:600;
+  color:var(--text-faint); text-transform:uppercase; letter-spacing:0.06em;
+  margin-bottom:0.5rem;
+}
+.splash-drop {
+  border:1.5px dashed var(--border-hi); border-radius:6px;
+  padding:1.5rem 0.8rem; text-align:center;
+  font-size:0.68rem; color:var(--text-faint); cursor:pointer;
+  transition:all 0.2s; line-height:1.6;
+}
+.splash-drop:hover { border-color:var(--green); color:var(--green); background:var(--green-dim); }
+.splash-saved {
+  max-height:120px; overflow-y:auto; scrollbar-width:thin;
+}
+.splash-saved-item {
+  display:flex; align-items:center; gap:0.4rem;
+  padding:0.35rem 0.5rem; margin-bottom:0.2rem;
+  background:var(--surface2); border:1px solid var(--border); border-radius:4px;
+  cursor:pointer; transition:all 0.15s;
+  font-family:var(--mono); font-size:0.6rem; color:var(--text-dim);
+}
+.splash-saved-item:hover { border-color:var(--green); color:var(--text); }
+.splash-saved-item .ss-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.splash-saved-item .ss-date { color:var(--text-faint); font-size:0.5rem; }
+.splash-saved-empty {
+  font-family:var(--mono); font-size:0.55rem; color:var(--text-faint);
+  opacity:0.5; font-style:italic;
+}
+
+/* ── FILE OPS ── */
+.file-ops-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:0.3rem;
+  margin-bottom:0.5rem;
+}
+.file-btn {
+  display:flex; align-items:center; justify-content:center; gap:0.3rem;
+  padding:0.4rem 0.3rem; background:var(--surface2);
+  border:1px solid var(--border); border-radius:4px;
+  color:var(--text-dim); font-family:var(--mono); font-size:0.62rem;
+  cursor:pointer; transition:all 0.15s;
+}
+.file-btn:hover { border-color:var(--green); color:var(--text); }
+.file-btn .file-icon { font-size:0.75rem; }
+
+/* ── DATA SUMMARY ── */
+.data-summary {
+  margin-top:0.5rem; font-family:var(--mono); font-size:0.58rem;
+  color:var(--text-dim); line-height:1.6;
+}
+.data-summary .ds-row {
+  display:flex; justify-content:space-between; padding:0.15rem 0;
+  border-bottom:1px solid var(--border);
+}
+.data-summary .ds-label { color:var(--text-faint); }
+.data-summary .ds-val { color:var(--green-bright); font-weight:600; }
+.data-summary .ds-cols {
+  margin-top:0.3rem; max-height:100px; overflow-y:auto; scrollbar-width:thin;
+}
+.data-summary .ds-col {
+  display:flex; justify-content:space-between; padding:0.1rem 0.2rem;
+  font-size:0.55rem;
+}
+.data-summary .ds-col:nth-child(even) { background:var(--surface2); }
+.data-summary .ds-col-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.data-summary .ds-col-type { color:var(--cyan); min-width:1em; text-align:center; }
+.data-summary .ds-col-toggle {
+  cursor:pointer; border-radius:3px; padding:0 0.2rem;
+  transition:all 0.15s;
+}
+.data-summary .ds-col-toggle:hover { background:var(--cyan); color:var(--bg); }
+
+/* ── LOAD DIALOG ── */
+.load-dialog-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100;
+  display:flex; align-items:center; justify-content:center;
+}
+.load-dialog {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:1.2rem; min-width:320px; max-width:420px;
+  max-height:80vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,0.5);
+}
+.load-dialog h3 {
+  font-family:var(--display); font-size:0.9rem; color:var(--text);
+  margin:0 0 0.8rem; font-weight:700;
+}
+.load-dialog-item {
+  display:flex; align-items:center; gap:0.5rem;
+  padding:0.5rem 0.6rem; margin-bottom:0.3rem;
+  background:var(--surface2); border:1px solid var(--border); border-radius:5px;
+  cursor:pointer; transition:all 0.15s;
+}
+.load-dialog-item:hover { border-color:var(--green); }
+.load-dialog-item .ldi-info { flex:1; }
+.load-dialog-item .ldi-name {
+  font-family:var(--mono); font-size:0.68rem; color:var(--text); font-weight:600;
+}
+.load-dialog-item .ldi-meta {
+  font-family:var(--mono); font-size:0.52rem; color:var(--text-faint); margin-top:0.15rem;
+}
+.load-dialog-item .ldi-delete {
+  padding:0.2rem 0.4rem; border:1px solid var(--border); border-radius:3px;
+  background:transparent; color:var(--red); font-size:0.6rem; cursor:pointer;
+  font-family:var(--mono); transition:all 0.15s;
+}
+.load-dialog-item .ldi-delete:hover { border-color:var(--red); background:rgba(255,80,80,0.1); }
+.load-dialog-close {
+  display:block; width:100%; margin-top:0.8rem; padding:0.4rem;
+  background:var(--surface2); border:1px solid var(--border); border-radius:4px;
+  color:var(--text-dim); font-family:var(--mono); font-size:0.65rem;
+  cursor:pointer; transition:all 0.15s;
+}
+.load-dialog-close:hover { border-color:var(--text-dim); color:var(--text); }
+.load-dialog-empty {
+  font-family:var(--mono); font-size:0.62rem; color:var(--text-faint);
+  text-align:center; padding:1rem; font-style:italic;
+}
+
+/* ── SQL IMPORT DIALOG ── */
+.sql-import-dialog {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:1.2rem; width:500px; max-width:90vw;
+  max-height:85vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,0.5);
+}
+.sql-import-dialog h3 {
+  font-family:var(--display); font-size:0.9rem; color:var(--text);
+  margin:0 0 0.3rem; font-weight:700;
+}
+.sql-import-dialog .sid-hint {
+  font-family:var(--mono); font-size:0.55rem; color:var(--text-faint);
+  margin-bottom:0.6rem; line-height:1.5;
+}
+.sql-import-dialog textarea {
+  width:100%; height:200px; background:var(--bg); border:1px solid var(--border);
+  border-radius:5px; color:var(--text); font-family:var(--mono); font-size:0.65rem;
+  padding:0.6rem; resize:vertical; outline:none; box-sizing:border-box;
+  line-height:1.5;
+}
+.sql-import-dialog textarea:focus { border-color:var(--green); }
+.sql-import-dialog .sid-error {
+  font-family:var(--mono); font-size:0.58rem; color:var(--red);
+  margin-top:0.4rem; min-height:1.2em;
+}
+.sql-import-dialog .sid-buttons {
+  display:flex; gap:0.4rem; margin-top:0.6rem;
+}
+.sql-import-dialog .sid-buttons button {
+  flex:1; padding:0.45rem; border-radius:4px; font-family:var(--mono);
+  font-size:0.68rem; cursor:pointer; transition:all 0.15s;
+}
+.sql-import-dialog .sid-apply {
+  background:var(--green); border:none; color:#111; font-weight:700;
+}
+.sql-import-dialog .sid-apply:hover { filter:brightness(1.15); }
+.sql-import-dialog .sid-cancel {
+  background:var(--surface2); border:1px solid var(--border); color:var(--text-dim);
+}
+.sql-import-dialog .sid-cancel:hover { border-color:var(--text-dim); color:var(--text); }
+
+/* ── HELP MODAL ── */
+.help-dialog {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:1.5rem; width:560px; max-width:90vw;
+  max-height:85vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  scrollbar-width:thin; scrollbar-color:var(--border) transparent;
+}
+.help-dialog h3 {
+  font-family:var(--display); font-size:1.1rem; color:var(--text);
+  margin:0 0 0.2rem; font-weight:700;
+}
+.help-dialog .help-sub {
+  font-family:var(--mono); font-size:0.58rem; color:var(--text-faint);
+  margin-bottom:1rem;
+}
+.help-dialog h4 {
+  font-family:var(--mono); font-size:0.68rem; font-weight:700;
+  color:var(--green-bright); margin:1rem 0 0.4rem; padding-bottom:0.2rem;
+  border-bottom:1px solid var(--border);
+}
+.help-dialog h4:first-of-type { margin-top:0.3rem; }
+.help-dialog p, .help-dialog li {
+  font-family:var(--body); font-size:0.68rem; color:var(--text-dim);
+  line-height:1.6; margin:0 0 0.4rem;
+}
+.help-dialog ul { margin:0 0 0.5rem; padding-left:1.2rem; }
+.help-dialog li { margin-bottom:0.2rem; }
+.help-dialog code {
+  font-family:var(--mono); font-size:0.62rem;
+  background:var(--bg); padding:0.1rem 0.3rem; border-radius:3px;
+  color:var(--amber);
+}
+.help-dialog kbd {
+  font-family:var(--mono); font-size:0.58rem;
+  background:var(--surface2); border:1px solid var(--border);
+  padding:0.1rem 0.35rem; border-radius:3px; color:var(--text);
+}
+.help-dialog .help-flow {
+  display:flex; align-items:center; gap:0.3rem; flex-wrap:wrap;
+  margin:0.5rem 0; font-family:var(--mono); font-size:0.6rem;
+}
+.help-dialog .help-flow-step {
+  padding:0.25rem 0.5rem; background:var(--surface2);
+  border:1px solid var(--border); border-radius:4px; color:var(--text-dim);
+}
+.help-dialog .help-flow-arrow { color:var(--green); font-weight:700; }
+.help-dialog .help-close {
+  display:block; width:100%; margin-top:1rem; padding:0.45rem;
+  background:var(--surface2); border:1px solid var(--border); border-radius:4px;
+  color:var(--text-dim); font-family:var(--mono); font-size:0.65rem;
+  cursor:pointer; transition:all 0.15s;
+}
+.help-dialog .help-close:hover { border-color:var(--text-dim); color:var(--text); }
+
+/* ── WORKSHOP ── */
+.splash-workshop { margin-top:1rem; }
+.workshop-launch-btn {
+  display:flex; align-items:center; gap:0.6rem; width:100%;
+  padding:0.7rem 0.8rem; background:var(--surface2);
+  border:1px dashed var(--green); border-radius:6px;
+  color:var(--text-dim); cursor:pointer; transition:all 0.2s;
+  text-align:left;
+}
+.workshop-launch-btn:hover { border-style:solid; background:var(--green-dim); color:var(--text); }
+.workshop-launch-btn span:first-child { font-size:1.3rem; }
+.workshop-launch-btn strong { color:var(--green-bright); font-family:var(--mono); font-size:0.68rem; }
+.workshop-launch-btn br + * { font-family:var(--mono); font-size:0.55rem; color:var(--text-faint); }
+
+.workshop-col {
+  width:240px; flex-shrink:0; background:var(--surface);
+  border-right:1px solid var(--green);
+  display:flex; flex-direction:column;
+  overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--border) transparent;
+}
+.ws-header {
+  padding:0.6rem 0.7rem; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:0.4rem;
+}
+.ws-header-title {
+  font-family:var(--mono); font-size:0.62rem; font-weight:700;
+  color:var(--green-bright); flex:1;
+}
+.ws-close-btn {
+  padding:0.2rem 0.4rem; border:1px solid var(--border); border-radius:3px;
+  background:transparent; color:var(--text-faint);
+  font-family:var(--mono); font-size:0.55rem; cursor:pointer;
+  transition:all 0.15s; line-height:1;
+}
+.ws-close-btn:hover { border-color:var(--red); color:var(--red); }
+.ws-body { flex:1; padding:0.7rem; }
+.ws-step-indicator {
+  font-family:var(--mono); font-size:0.52rem; color:var(--text-faint);
+  margin-bottom:0.3rem; letter-spacing:0.04em;
+}
+.ws-progress {
+  height:2px; background:var(--border); border-radius:1px;
+  margin-bottom:0.6rem; overflow:hidden;
+}
+.ws-progress-fill {
+  height:100%; background:var(--green); border-radius:1px;
+  transition:width 0.3s;
+}
+.ws-title {
+  font-family:var(--display); font-size:0.78rem; color:var(--text);
+  font-weight:700; margin-bottom:0.35rem; line-height:1.3;
+}
+.ws-desc {
+  font-family:var(--body); font-size:0.62rem; color:var(--text-dim);
+  line-height:1.6; margin-bottom:0.5rem;
+}
+.ws-desc code {
+  font-family:var(--mono); font-size:0.58rem; background:var(--bg);
+  padding:0.06rem 0.2rem; border-radius:3px; color:var(--amber);
+}
+.ws-desc strong { color:var(--text); }
+.ws-actions {
+  display:flex; flex-direction:column; gap:0.25rem; margin-bottom:0.5rem;
+}
+.ws-action-btn {
+  padding:0.35rem 0.5rem; border:1px solid var(--green); border-radius:4px;
+  background:var(--green-dim); color:var(--green-bright);
+  font-family:var(--mono); font-size:0.58rem; font-weight:600;
+  cursor:pointer; transition:all 0.15s; text-align:left;
+}
+.ws-action-btn:hover { background:var(--green); color:#111; }
+.ws-footer {
+  padding:0.5rem 0.7rem; border-top:1px solid var(--border);
+  display:flex; gap:0.3rem; align-items:center;
+}
+.ws-nav-btn {
+  flex:1; padding:0.35rem; border:1px solid var(--border); border-radius:4px;
+  background:var(--surface2); color:var(--text-dim);
+  font-family:var(--mono); font-size:0.58rem; cursor:pointer;
+  transition:all 0.15s; text-align:center;
+}
+.ws-nav-btn:hover { border-color:var(--text-dim); color:var(--text); }
+.ws-nav-btn:disabled { opacity:0.3; cursor:not-allowed; }
+.ws-nav-btn.ws-next { border-color:var(--green); color:var(--green-bright); }
+.ws-nav-btn.ws-next:hover { background:var(--green); color:#111; }
+
+/* ── RIGHT PANEL (overlay) ── */
+.panel-right {
+  position:absolute; top:1.85rem; right:0; bottom:0;
+  width:320px; background:var(--surface);
+  border-left:1px solid var(--border);
+  display:flex; flex-direction:column; overflow-y:auto;
+  scrollbar-width:thin; scrollbar-color:var(--border) transparent;
+  z-index:10; box-shadow:-4px 0 20px rgba(0,0,0,0.3);
+  transition:transform 0.2s;
+}
+.panel-right.collapsed { transform:translateX(100%); }
+
+.panel-right .resize-handle {
+  position:absolute; left:-4px; top:0; bottom:0; width:8px;
+  cursor:col-resize; z-index:11;
+}
+.panel-right .resize-handle:hover,
+.panel-right .resize-handle.active {
+  background:var(--green); opacity:0.3;
+}
+
+.panel-toggle {
+  position:absolute; top:50%; right:320px; z-index:11;
+  transform:translateY(-50%);
+  padding:0.4rem 0.2rem; border:1px solid var(--border); border-right:none;
+  border-radius:4px 0 0 4px;
+  background:var(--surface2); color:var(--text-dim); font-family:var(--mono);
+  font-size:0.6rem; cursor:pointer; transition:all 0.2s;
+  writing-mode:vertical-lr; letter-spacing:0.05em;
+}
+.panel-toggle:hover { border-color:var(--green); color:var(--text); background:var(--surface3); }
+
+.inspector-header {
+  padding:0.8rem 1rem; border-bottom:1px solid var(--border);
+}
+.inspector-header h3 {
+  font-family:var(--display); font-size:1rem; font-weight:700;
+}
+
+.inspector-empty {
+  padding:2rem 1rem; text-align:center;
+  font-size:0.75rem; color:var(--text-faint); font-style:italic;
+}
+
+.inspector-section {
+  padding:0.7rem 1rem; border-bottom:1px solid var(--border);
+}
+.inspector-section h4 {
+  font-family:var(--mono); font-size:0.62rem; font-weight:600;
+  color:var(--text-faint); text-transform:uppercase; letter-spacing:0.06em;
+  margin-bottom:0.4rem;
+}
+
+.class-bar {
+  display:flex; height:18px; border-radius:3px; overflow:hidden;
+  margin-bottom:0.3rem; border:1px solid var(--border);
+}
+.class-bar-seg { transition:width 0.3s; min-width:1px; }
+
+.class-legend { display:flex; flex-wrap:wrap; gap:0.3rem 0.8rem; margin-top:0.3rem; }
+.class-legend-item {
+  display:flex; align-items:center; gap:0.3rem;
+  font-family:var(--mono); font-size:0.6rem; color:var(--text-dim);
+}
+.class-dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+
+.split-info {
+  font-family:var(--mono); font-size:0.72rem; color:var(--text);
+  padding:0.4rem 0.5rem; background:var(--bg); border-radius:4px;
+  border:1px solid var(--border); line-height:1.6;
+}
+.split-feature { color:var(--amber); font-weight:600; }
+.split-threshold { color:var(--green-bright); font-weight:600; }
+
+.metric-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.3rem; }
+.metric-cell {
+  padding:0.3rem 0.4rem; background:var(--bg); border-radius:3px;
+  border:1px solid var(--border);
+}
+.metric-cell .mc-label {
+  font-family:var(--mono); font-size:0.55rem; color:var(--text-faint);
+  text-transform:uppercase;
+}
+.metric-cell .mc-val {
+  font-family:var(--mono); font-size:0.82rem; font-weight:700;
+  color:var(--green-bright);
+}
+
+.rules-box {
+  background:var(--bg); border:1px solid var(--border); border-radius:4px;
+  padding:0.5rem; font-family:var(--mono); font-size:0.62rem;
+  color:var(--text-dim); max-height:300px; overflow-y:auto;
+  white-space:pre-wrap; line-height:1.7; tab-size:2;
+  scrollbar-width:thin; scrollbar-color:var(--border) transparent;
+}
+.rules-box .rule-if { color:var(--cyan); font-weight:600; }
+.rules-box .rule-feat { color:var(--amber); }
+.rules-box .rule-val { color:var(--green-bright); }
+.rules-box .rule-class { color:var(--text); font-weight:700; }
+.rules-box .rule-meta { color:var(--text-faint); }
+
+.export-grid {
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.3rem; margin-top:0.5rem;
+}
+.export-btn {
+  display:flex; align-items:center; justify-content:center; gap:0.25rem;
+  padding:0.35rem 0.3rem; border:1px solid var(--border); border-radius:4px;
+  background:var(--surface2); color:var(--text-dim); font-family:var(--mono);
+  font-size:0.58rem; cursor:pointer; transition:all 0.15s; white-space:nowrap;
+}
+.export-btn:hover { border-color:var(--amber); color:var(--amber); }
+.export-btn.import-btn { border-style:dashed; }
+.export-btn.import-btn:hover { border-color:var(--cyan); color:var(--cyan); }
+
+/* ── BONSAI ACTIONS ── */
+.bonsai-section {
+  padding:0.7rem 1rem; border-bottom:1px solid var(--border);
+}
+.bonsai-section h4 {
+  font-family:var(--mono); font-size:0.62rem; font-weight:600;
+  color:var(--amber); text-transform:uppercase; letter-spacing:0.06em;
+  margin-bottom:0.5rem;
+}
+.bonsai-row { display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.4rem; }
+.bonsai-btn {
+  padding:0.35rem 0.65rem; border:1px solid var(--border); border-radius:4px;
+  background:var(--surface2); color:var(--text-dim); font-family:var(--mono);
+  font-size:0.62rem; cursor:pointer; transition:all 0.15s;
+}
+.bonsai-btn:hover { border-color:var(--amber); color:var(--amber); background:var(--amber-dim); }
+.bonsai-btn.danger:hover { border-color:var(--red); color:var(--red); background:var(--red-dim); }
+.bonsai-btn.grow:hover { border-color:var(--green); color:var(--green); background:var(--green-dim); }
+.bonsai-btn:disabled { opacity:0.3; cursor:not-allowed; }
+.bonsai-btn:disabled:hover { border-color:var(--border); color:var(--text-dim); background:var(--surface2); }
+
+.undo-bar {
+  display:flex; align-items:center; gap:0.5rem;
+  padding:0.4rem 1rem; border-bottom:1px solid var(--border);
+  font-family:var(--mono); font-size:0.6rem; color:var(--text-faint);
+}
+.undo-bar .edit-count { color:var(--amber); font-weight:600; }
+
+.alt-splits { margin-top:0.4rem; }
+.alt-split-item {
+  display:flex; align-items:center; gap:0.4rem;
+  padding:0.3rem 0.5rem; margin-bottom:0.25rem;
+  background:var(--bg); border:1px solid var(--border); border-radius:4px;
+  font-family:var(--mono); font-size:0.6rem; color:var(--text-dim);
+  cursor:pointer; transition:all 0.15s;
+}
+.alt-split-item:hover { border-color:var(--cyan); color:var(--text); }
+.alt-split-item .alt-gain { color:var(--green-bright); font-weight:600; min-width:4em; }
+.alt-split-item .alt-feat { color:var(--amber); }
+.alt-split-item .alt-val { color:var(--cyan); }
+.alt-split-item.current { border-color:var(--green); background:var(--green-dim); }
+
+/* ── SVG TREE ── */
+.tree-node { cursor:pointer; }
+.tree-node:hover rect { stroke:var(--green) !important; stroke-width:2 !important; }
+.tree-node.selected rect { stroke:var(--green) !important; stroke-width:2.5 !important;
+  filter:drop-shadow(0 0 6px rgba(76,175,80,0.3)); }
+.tree-link { fill:none; stroke:var(--border-hi); stroke-width:1.5; }
+.tree-node text { font-family:var(--mono); }
+
+/* Toast */
+.toast {
+  position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%);
+  background:var(--surface3); border:1px solid var(--border);
+  padding:0.5rem 1.2rem; border-radius:6px; font-family:var(--mono);
+  font-size:0.72rem; color:var(--green-bright); z-index:100;
+  box-shadow:0 4px 20px rgba(0,0,0,0.4);
+  animation:toastIn 0.3s ease, toastOut 0.3s ease 2s forwards;
+}
+@keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(10px); } }
+@keyframes toastOut { to { opacity:0; transform:translateX(-50%) translateY(10px); } }
+
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--border-hi); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+    <div class="logo">
+      <h1>🌳 Arbor<span>ist</span></h1>
+      <div class="sub">Decision Tree Cultivator</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Data</div>
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        📂 Drop CSV here or click to browse
+      </div>
+      <input type="file" id="fileInput" accept=".csv,.tsv,.txt" style="display:none" />
+      <div id="dataSummary" style="display:none;"></div>
+    </div>
+
+    <div class="section" id="configSection" style="display:none;">
+      <div class="section-label">Configuration</div>
+      <div class="ctrl-row">
+        <label>Target</label>
+        <select id="targetSelect"></select>
+      </div>
+      <div class="ctrl-row">
+        <label>Max Depth</label>
+        <input type="number" id="maxDepth" value="5" min="1" max="20" step="1" />
+      </div>
+      <div class="ctrl-row">
+        <label>Min Leaf</label>
+        <input type="number" id="minLeaf" value="5" min="1" max="100" step="1" />
+      </div>
+      <div class="ctrl-row">
+        <label>Min Split</label>
+        <input type="number" id="minSplit" value="10" min="2" max="200" step="1" />
+      </div>
+      <button class="grow-btn" id="growBtn" onclick="growTree()">🌱 Grow Tree</button>
+    </div>
+
+    <div class="stats" id="statsBar" style="display:none;"></div>
+
+    <div class="section" id="fileOpsSection">
+      <div class="section-label">Projects</div>
+      <div class="file-ops-grid">
+        <button class="file-btn" onclick="saveProject()" title="Save to browser storage">
+          <span class="file-icon">💾</span> Save
+        </button>
+        <button class="file-btn" onclick="showLoadDialog()" title="Load from browser storage">
+          <span class="file-icon">📂</span> Open
+        </button>
+        <button class="file-btn" onclick="exportProject()" title="Export as JSON file">
+          <span class="file-icon">📤</span> Export
+        </button>
+        <button class="file-btn" onclick="document.getElementById('importInput').click()" title="Import JSON file">
+          <span class="file-icon">📥</span> Import
+        </button>
+      </div>
+      <input type="file" id="importInput" accept=".json" style="display:none" />
+      <div id="savedProjectsList"></div>
+    </div>
+
+    <div style="padding:0.5rem 1rem; margin-top:auto; border-top:1px solid var(--border);">
+      <div style="font-family:var(--mono); font-size:0.55rem; color:var(--text-faint); text-align:center; line-height:1.8;">
+        <span style="color:var(--text-dim);">Arborist</span> v0.1.0 <span style="background:var(--green-dim);color:var(--green-bright);padding:0.05rem 0.25rem;border-radius:2px;font-size:0.48rem;font-weight:700;letter-spacing:0.04em;">WA</span><br>
+        Geoscientific Chaos Union<br>
+        <a href="https://github.com/endarthur/arborist" target="_blank" style="color:var(--green);text-decoration:none;opacity:0.7;">github.com/endarthur/arborist</a><br>
+        <span style="opacity:0.5;">DOI: pending first release</span><br>
+        © 2026 Arthur Endlein · MIT License
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="main-toolbar">
+      <span>Tree View</span>
+      <span class="spacer"></span>
+      <button class="tb-btn" onclick="showHelp()" title="Help & Guide">?</button>
+      <button class="tb-btn" onclick="startWorkshop()" title="Guided Workshop" style="font-size:0.58rem;">📖</button>
+      <button class="tb-btn" onclick="zoomFit()" title="Fit tree to view">Fit</button>
+      <button class="tb-btn" onclick="zoomIn()">+</button>
+      <button class="tb-btn" onclick="zoomOut()">−</button>
+      <span id="zoomLevel" style="min-width:3em; text-align:center;">100%</span>
+    </div>
+    <div class="tree-container" id="treeContainer">
+      <div class="empty-state" id="emptyState">
+        <div class="splash">
+          <div class="splash-hero">
+            <div class="splash-icon">🌳</div>
+            <h2>Welcome to Arborist</h2>
+            <p>Build, reshape, and export decision trees for classification and regression</p>
+          </div>
+          <div class="splash-grid">
+            <div class="splash-section">
+              <div class="splash-label">Example Datasets</div>
+              <button class="example-btn" onclick="loadExample('ironore')">
+                <div class="ex-name">⛏ Iron Ore Domains</div>
+                <div class="ex-desc">Fe, SiO₂, depth, weathering → domain classification</div>
+              </button>
+              <button class="example-btn" onclick="loadExample('rocktype')">
+                <div class="ex-name">🪨 Rock Type (Geochemistry)</div>
+                <div class="ex-desc">Major oxides → basalt / andesite / dacite / rhyolite</div>
+              </button>
+              <button class="example-btn" onclick="loadExample('iris')">
+                <div class="ex-name">🌺 Iris (Classic ML)</div>
+                <div class="ex-desc">Petal & sepal measurements → species</div>
+              </button>
+            </div>
+            <div class="splash-section">
+              <div class="splash-label">Your Data</div>
+              <div class="drop-zone splash-drop" onclick="document.getElementById('fileInput').click()">
+                📂 Drop CSV here<br>or click to browse
+              </div>
+              <div class="splash-label" style="margin-top:0.8rem;">Saved Projects</div>
+              <div id="splashSavedList" class="splash-saved"></div>
+            </div>
+          </div>
+          <div class="splash-workshop">
+            <button class="workshop-launch-btn" onclick="startWorkshop()">
+              <span>📖</span>
+              <span><strong>Guided Workshop</strong><br>Interactive introduction to decision trees, CART, Gini impurity, and the bonsai workflow</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INSPECTOR (overlay) -->
+    <button class="panel-toggle" id="panelToggle" onclick="toggleInspector()">◀ Inspector</button>
+    <div class="panel-right" id="panelRight">
+      <div class="resize-handle" id="resizeHandle"></div>
+      <div class="inspector-header">
+        <h3>🔍 Inspector</h3>
+      </div>
+      <div class="undo-bar" id="undoBar" style="display:none;">
+        <span>Edits: <span class="edit-count">0</span></span>
+        <button class="bonsai-btn" onclick="undoEdit()" style="margin-left:auto;">↩ Undo</button>
+        <button class="bonsai-btn danger" onclick="resetTree()">⟲ Reset</button>
+      </div>
+      <div id="inspectorContent">
+        <div class="inspector-empty">Click a node in the tree to inspect it</div>
+      </div>
+      <div class="inspector-section" id="rulesSection" style="display:none;">
+        <h4>Decision Rules</h4>
+        <div class="rules-box" id="rulesBox"></div>
+        <div style="font-family:var(--mono);font-size:0.52rem;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.06em;margin-top:0.6rem;margin-bottom:0.25rem;">Export</div>
+        <div class="export-grid">
+          <button class="export-btn" onclick="exportRules('text')">📋 Rules</button>
+          <button class="export-btn" onclick="exportRules('python')">🐍 Python</button>
+          <button class="export-btn" onclick="exportRules('excel')">📊 Excel IF</button>
+          <button class="export-btn" onclick="exportRules('sql')">🗄 SQL CASE</button>
+          <button class="export-btn" onclick="exportCSVPredictions()">📁 CSV</button>
+          <button class="export-btn import-btn" onclick="showSQLImportDialog()">📥 Import SQL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+let DATA = null;
+let TREE = null;
+let selectedNodeId = null;
+let svgZoom = 1;
+const CLASS_COLORS = [
+  '#4caf50','#c9a227','#5aadad','#c45e5e','#8a7abf',
+  '#bf8a5a','#5abf7a','#bf5a8a','#5a7abf','#afaf4c',
+  '#7a5abf','#5abfbf','#bf5a5a','#8abf5a','#5a8abf'
+];
+
+// ═══════════════════════════════════════
+//  CSV PARSING
+// ═══════════════════════════════════════
+function parseCSV(text, delimiter) {
+  if (!delimiter) {
+    const firstLine = text.split('\n')[0];
+    delimiter = (firstLine.split('\t').length > firstLine.split(',').length) ? '\t' : ',';
+  }
+  const lines = text.trim().split('\n').filter(l => l.trim());
+  const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const vals = lines[i].split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
+    if (vals.length === headers.length) {
+      const row = {};
+      headers.forEach((h, j) => { row[h] = vals[j]; });
+      rows.push(row);
+    }
+  }
+  const types = {};
+  headers.forEach(h => {
+    const sample = rows.slice(0, 50).map(r => r[h]).filter(v => v !== '' && v !== 'NA' && v !== 'null');
+    const allNumeric = sample.every(v => !isNaN(parseFloat(v)) && isFinite(v));
+    types[h] = allNumeric && sample.length > 0 ? 'numeric' : 'categorical';
+  });
+  return { headers, rows, types };
+}
+
+function loadData(csvText) {
+  DATA = parseCSV(csvText);
+  if (DATA.rows.length === 0) { alert('No data rows found.'); return; }
+  DATA._origTypes = { ...DATA.types }; // remember auto-detected types
+  const sel = document.getElementById('targetSelect');
+  sel.innerHTML = '';
+  const cats = DATA.headers.filter(h => DATA.types[h] === 'categorical');
+  const nums = DATA.headers.filter(h => DATA.types[h] === 'numeric');
+  [...cats, ...nums].forEach(h => {
+    const opt = document.createElement('option');
+    opt.value = h;
+    opt.textContent = h + (DATA.types[h] === 'categorical' ? ' ●' : ' #');
+    sel.appendChild(opt);
+  });
+  document.getElementById('configSection').style.display = '';
+  document.getElementById('growBtn').disabled = false;
+  const statsBar = document.getElementById('statsBar');
+  statsBar.style.display = '';
+  statsBar.innerHTML = `
+    <span>Rows: <span class="stat-val">${DATA.rows.length}</span></span>
+    <span>Features: <span class="stat-val">${DATA.headers.length}</span></span>
+    <span>Numeric: <span class="stat-val">${nums.length}</span></span>
+    <span>Categorical: <span class="stat-val">${cats.length}</span></span>
+  `;
+
+  // Data summary in left panel
+  const ds = document.getElementById('dataSummary');
+  ds.style.display = '';
+  renderDataSummary();
+}
+
+function renderDataSummary() {
+  if (!DATA) return;
+  const ds = document.getElementById('dataSummary');
+  const nums = DATA.headers.filter(h => DATA.types[h] === 'numeric');
+  const cats = DATA.headers.filter(h => DATA.types[h] === 'categorical');
+  let dsHtml = '<div class="data-summary">';
+  dsHtml += `<div class="ds-row"><span class="ds-label">Rows</span><span class="ds-val">${DATA.rows.length}</span></div>`;
+  dsHtml += `<div class="ds-row"><span class="ds-label">Columns</span><span class="ds-val">${DATA.headers.length}</span></div>`;
+  dsHtml += `<div class="ds-row"><span class="ds-label">Numeric</span><span class="ds-val">${nums.length}</span></div>`;
+  dsHtml += `<div class="ds-row"><span class="ds-label">Categorical</span><span class="ds-val">${cats.length}</span></div>`;
+  dsHtml += '<div class="ds-cols">';
+  for (const h of DATA.headers) {
+    const isNum = DATA.types[h] === 'numeric';
+    const canToggle = DATA._origTypes[h] === 'numeric'; // only originally-numeric cols can toggle
+    dsHtml += `<div class="ds-col">
+      <span class="ds-col-name">${h}</span>
+      <span class="ds-col-type${canToggle ? ' ds-col-toggle' : ''}"
+        ${canToggle ? `onclick="toggleColType('${h.replace(/'/g, "\\'")}')" title="Click to toggle numeric ↔ categorical"` : `title="${isNum ? 'numeric' : 'categorical (text)'}"`}
+      >${isNum ? 'num #' : 'cat ●'}</span>
+    </div>`;
+  }
+  dsHtml += '</div></div>';
+  ds.innerHTML = dsHtml;
+}
+
+function toggleColType(col) {
+  if (!DATA) return;
+  DATA.types[col] = DATA.types[col] === 'numeric' ? 'categorical' : 'numeric';
+  renderDataSummary();
+  // Refresh target select
+  const sel = document.getElementById('targetSelect');
+  const prevTarget = sel.value;
+  sel.innerHTML = '';
+  const cats = DATA.headers.filter(h => DATA.types[h] === 'categorical');
+  const nums = DATA.headers.filter(h => DATA.types[h] === 'numeric');
+  [...cats, ...nums].forEach(h => {
+    const opt = document.createElement('option');
+    opt.value = h;
+    opt.textContent = h + (DATA.types[h] === 'categorical' ? ' ●' : ' #');
+    sel.appendChild(opt);
+  });
+  if (DATA.headers.includes(prevTarget)) sel.value = prevTarget;
+  showToast(`${col} → ${DATA.types[col]}`);
+}
+
+// ═══════════════════════════════════════
+//  CART (Gini / Variance — classification + regression)
+// ═══════════════════════════════════════
+let TREE_MODE = 'classification'; // or 'regression'
+
+function giniImpurity(classCounts, total) {
+  if (total === 0) return 0;
+  let sum = 0;
+  for (const c of Object.values(classCounts)) { const p = c / total; sum += p * p; }
+  return 1 - sum;
+}
+
+function countClasses(rows, target) {
+  const counts = {};
+  for (const r of rows) { const v = r[target]; counts[v] = (counts[v] || 0) + 1; }
+  return counts;
+}
+
+function majorityClass(classCounts) {
+  let best = null, bestN = -1;
+  for (const [cls, n] of Object.entries(classCounts)) { if (n > bestN) { best = cls; bestN = n; } }
+  return best;
+}
+
+// Regression helpers
+function regVariance(rows, target) {
+  if (rows.length === 0) return 0;
+  const vals = rows.map(r => parseFloat(r[target])).filter(v => !isNaN(v));
+  if (vals.length === 0) return 0;
+  const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+  return vals.reduce((a, v) => a + (v - mean) ** 2, 0) / vals.length;
+}
+function regMean(rows, target) {
+  const vals = rows.map(r => parseFloat(r[target])).filter(v => !isNaN(v));
+  return vals.length === 0 ? 0 : vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+function regStd(rows, target) { return Math.sqrt(regVariance(rows, target)); }
+
+function findBestSplit(rows, features, target, types, minLeaf) {
+  const n = rows.length;
+  const isReg = TREE_MODE === 'regression';
+  let parentImpurity, parentCounts;
+  if (isReg) {
+    parentImpurity = regVariance(rows, target);
+  } else {
+    parentCounts = countClasses(rows, target);
+    parentImpurity = giniImpurity(parentCounts, n);
+  }
+  let bestGain = -Infinity, bestSplit = null;
+
+  for (const feat of features) {
+    if (feat === target) continue;
+    if (types[feat] === 'numeric') {
+      const valid = rows.filter(r => r[feat] !== '' && r[feat] !== 'NA' && !isNaN(parseFloat(r[feat])));
+      if (valid.length < 2) continue;
+
+      if (isReg) {
+        const sorted = valid.map(r => ({ val: parseFloat(r[feat]), y: parseFloat(r[target]) })).sort((a, b) => a.val - b.val);
+        let lN = 0, lSum = 0, lSqSum = 0;
+        let rN = sorted.length, rSum = sorted.reduce((a, d) => a + d.y, 0), rSqSum = sorted.reduce((a, d) => a + d.y * d.y, 0);
+        for (let i = 0; i < sorted.length - 1; i++) {
+          lN++; lSum += sorted[i].y; lSqSum += sorted[i].y * sorted[i].y;
+          rN--; rSum -= sorted[i].y; rSqSum -= sorted[i].y * sorted[i].y;
+          if (sorted[i].val === sorted[i + 1].val) continue;
+          if (lN < minLeaf || rN < minLeaf) continue;
+          const lVar = Math.max(0, lSqSum / lN - (lSum / lN) ** 2);
+          const rVar = Math.max(0, rSqSum / rN - (rSum / rN) ** 2);
+          const wVar = (lN * lVar + rN * rVar) / (lN + rN);
+          const gain = parentImpurity - wVar;
+          if (gain > bestGain) {
+            bestGain = gain;
+            bestSplit = { feature: feat, type: 'numeric', threshold: (sorted[i].val + sorted[i + 1].val) / 2,
+              gain, giniLeft: lVar, giniRight: rVar, nLeft: lN, nRight: rN };
+          }
+        }
+      } else {
+        const sorted = valid.map(r => ({ val: parseFloat(r[feat]), cls: r[target] })).sort((a, b) => a.val - b.val);
+        const leftCounts = {}, rightCounts = { ...parentCounts };
+        const missing = rows.filter(r => r[feat] === '' || r[feat] === 'NA' || isNaN(parseFloat(r[feat])));
+        for (const m of missing) { rightCounts[m[target]]--; if (rightCounts[m[target]] === 0) delete rightCounts[m[target]]; }
+        let leftN = 0, rightN = valid.length;
+        for (let i = 0; i < sorted.length - 1; i++) {
+          const cls = sorted[i].cls;
+          leftCounts[cls] = (leftCounts[cls] || 0) + 1;
+          rightCounts[cls]--; if (rightCounts[cls] === 0) delete rightCounts[cls];
+          leftN++; rightN--;
+          if (sorted[i].val === sorted[i + 1].val) continue;
+          if (leftN < minLeaf || rightN < minLeaf) continue;
+          const leftGini = giniImpurity(leftCounts, leftN);
+          const rightGini = giniImpurity(rightCounts, rightN);
+          const wGini = (leftN * leftGini + rightN * rightGini) / (leftN + rightN);
+          const gain = parentImpurity - wGini;
+          if (gain > bestGain) {
+            bestGain = gain;
+            bestSplit = { feature: feat, type: 'numeric', threshold: (sorted[i].val + sorted[i + 1].val) / 2,
+              gain, giniLeft: leftGini, giniRight: rightGini, nLeft: leftN, nRight: rightN };
+          }
+        }
+      }
+    } else {
+      const categories = [...new Set(rows.map(r => r[feat]).filter(v => v !== '' && v !== 'NA'))];
+      if (categories.length < 2) continue;
+      for (const cat of categories) {
+        const leftRows = rows.filter(r => r[feat] === cat);
+        const rightRows = rows.filter(r => r[feat] !== cat && r[feat] !== '' && r[feat] !== 'NA');
+        if (leftRows.length < minLeaf || rightRows.length < minLeaf) continue;
+        const total = leftRows.length + rightRows.length;
+        let gain, lImp, rImp;
+        if (isReg) {
+          lImp = regVariance(leftRows, target); rImp = regVariance(rightRows, target);
+        } else {
+          const lc = countClasses(leftRows, target), rc = countClasses(rightRows, target);
+          lImp = giniImpurity(lc, leftRows.length); rImp = giniImpurity(rc, rightRows.length);
+        }
+        gain = parentImpurity - (leftRows.length * lImp + rightRows.length * rImp) / total;
+        if (gain > bestGain) {
+          bestGain = gain;
+          bestSplit = { feature: feat, type: 'categorical', category: cat, gain,
+            giniLeft: lImp, giniRight: rImp, nLeft: leftRows.length, nRight: rightRows.length };
+        }
+      }
+    }
+  }
+  return bestSplit;
+}
+
+function splitRows(rows, split) {
+  if (split.type === 'numeric') {
+    const left = rows.filter(r => { const v = parseFloat(r[split.feature]); return !isNaN(v) && v <= split.threshold; });
+    const right = rows.filter(r => { const v = parseFloat(r[split.feature]); return !isNaN(v) && v > split.threshold; });
+    return [left, right];
+  }
+  return [rows.filter(r => r[split.feature] === split.category),
+          rows.filter(r => r[split.feature] !== split.category && r[split.feature] !== '' && r[split.feature] !== 'NA')];
+}
+
+let nodeIdCounter = 0;
+
+function buildTree(rows, features, target, types, depth, maxDepth, minLeaf, minSplit) {
+  const id = nodeIdCounter++;
+  const n = rows.length;
+  const isReg = TREE_MODE === 'regression';
+
+  let classCounts, gini, prediction, confidence;
+  if (isReg) {
+    classCounts = {};
+    gini = regVariance(rows, target);
+    prediction = regMean(rows, target);
+    confidence = regStd(rows, target); // std stored in confidence field
+    const uniqueVals = new Set(rows.map(r => r[target])).size;
+    if (depth >= maxDepth || n < minSplit || uniqueVals <= 1) {
+      return { id, leaf: true, prediction, classCounts, gini, n, depth, confidence, _rows: rows };
+    }
+  } else {
+    classCounts = countClasses(rows, target);
+    gini = giniImpurity(classCounts, n);
+    prediction = majorityClass(classCounts);
+    confidence = (classCounts[prediction] || 0) / n;
+    const uniqueClasses = Object.keys(classCounts).length;
+    if (depth >= maxDepth || n < minSplit || uniqueClasses <= 1) {
+      return { id, leaf: true, prediction, classCounts, gini, n, depth, confidence, _rows: rows };
+    }
+  }
+
+  const split = findBestSplit(rows, features, target, types, minLeaf);
+  if (!split || split.gain <= 0) {
+    return { id, leaf: true, prediction, classCounts, gini, n, depth, confidence, _rows: rows };
+  }
+  const [leftRows, rightRows] = splitRows(rows, split);
+  if (leftRows.length === 0 || rightRows.length === 0) {
+    return { id, leaf: true, prediction, classCounts, gini, n, depth, confidence, _rows: rows };
+  }
+
+  return {
+    id, leaf: false, split, prediction, classCounts, gini, n, depth,
+    confidence, _rows: rows,
+    left: buildTree(leftRows, features, target, types, depth + 1, maxDepth, minLeaf, minSplit),
+    right: buildTree(rightRows, features, target, types, depth + 1, maxDepth, minLeaf, minSplit),
+  };
+}
+
+function predictRow(node, row) {
+  if (node.leaf) return { class: node.prediction, confidence: node.confidence, leafId: node.id };
+  const { split } = node;
+  if (split.type === 'numeric') {
+    const v = parseFloat(row[split.feature]);
+    if (isNaN(v)) return { class: node.prediction, confidence: node.confidence, leafId: node.id };
+    return v <= split.threshold ? predictRow(node.left, row) : predictRow(node.right, row);
+  }
+  return row[split.feature] === split.category ? predictRow(node.left, row) : predictRow(node.right, row);
+}
+
+function treeAccuracy(tree, rows, target) {
+  if (TREE_MODE === 'regression') {
+    const vals = rows.map(r => parseFloat(r[target]));
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+    const ssTot = vals.reduce((a, v) => a + (v - mean) ** 2, 0);
+    if (ssTot === 0) return 1;
+    const ssRes = rows.reduce((a, r) => {
+      const pred = predictRow(tree, r).class;
+      return a + (parseFloat(r[target]) - pred) ** 2;
+    }, 0);
+    return Math.max(0, 1 - ssRes / ssTot);
+  }
+  let correct = 0;
+  for (const r of rows) { if (predictRow(tree, r).class === r[target]) correct++; }
+  return correct / rows.length;
+}
+
+function countNodes(node) {
+  if (node.leaf) return { total: 1, leaves: 1, maxDepth: node.depth };
+  const l = countNodes(node.left), r = countNodes(node.right);
+  return { total: 1 + l.total + r.total, leaves: l.leaves + r.leaves, maxDepth: Math.max(l.maxDepth, r.maxDepth) };
+}
+
+// ═══════════════════════════════════════
+//  GROW
+// ═══════════════════════════════════════
+function growTree() {
+  if (!DATA) return;
+  const target = document.getElementById('targetSelect').value;
+  const maxDepth = parseInt(document.getElementById('maxDepth').value) || 5;
+  const minLeaf = parseInt(document.getElementById('minLeaf').value) || 5;
+  const minSplit = parseInt(document.getElementById('minSplit').value) || 10;
+  const features = DATA.headers.filter(h => h !== target);
+  const validRows = DATA.rows.filter(r => r[target] !== '' && r[target] !== 'NA' && r[target] !== 'null');
+
+  // Detect mode from target column type
+  TREE_MODE = DATA.types[target] === 'numeric' ? 'regression' : 'classification';
+
+  nodeIdCounter = 0;
+  const t0 = performance.now();
+  TREE = buildTree(validRows, features, target, DATA.types, 0, maxDepth, minLeaf, minSplit);
+  TREE._target = target; TREE._features = features;
+  TREE._mode = TREE_MODE;
+  TREE._rows = validRows;
+  if (TREE_MODE === 'classification') {
+    TREE._classes = [...new Set(validRows.map(r => r[target]))].sort();
+  } else {
+    TREE._classes = [];
+  }
+  const elapsed = (performance.now() - t0).toFixed(1);
+  const metric = treeAccuracy(TREE, validRows, target);
+  const stats = countNodes(TREE);
+  const metricLabel = TREE_MODE === 'regression' ? 'R²' : 'Accuracy';
+  const metricVal = TREE_MODE === 'regression' ? metric.toFixed(3) : (metric * 100).toFixed(1) + '%';
+
+  document.getElementById('statsBar').innerHTML = `
+    <span>Rows: <span class="stat-val">${validRows.length}</span></span>
+    <span>Nodes: <span class="stat-val">${stats.total}</span></span>
+    <span>Leaves: <span class="stat-val">${stats.leaves}</span></span>
+    <span>Depth: <span class="stat-val">${stats.maxDepth}</span></span>
+    <span>${metricLabel}: <span class="stat-val">${metricVal}</span></span>
+    <span>Time: <span class="stat-val">${elapsed}ms</span></span>
+  `;
+
+  selectedNodeId = null;
+  undoStack.length = 0;
+  document.getElementById('inspectorContent').innerHTML = '<div class="inspector-empty">Click a node in the tree to inspect it</div>';
+  const es = document.getElementById('emptyState');
+  if (es) es.style.display = 'none';
+  renderTree();
+  renderRules();
+  updateUndoBar();
+  setTimeout(zoomFit, 30);
+}
+
+// ═══════════════════════════════════════
+//  TREE VIZ (SVG)
+// ═══════════════════════════════════════
+const NODE_W = 160, NODE_H = 62, H_GAP = 30, V_GAP = 55;
+
+function layoutTree(node) {
+  if (node.leaf) { node._width = NODE_W; return; }
+  layoutTree(node.left); layoutTree(node.right);
+  const lw = node.left._width, rw = node.right._width;
+  node._width = lw + H_GAP + rw;
+  // Left child center = parent - (rightWidth + gap) / 2
+  // Right child center = parent + (leftWidth + gap) / 2
+  node.left._x = -(rw + H_GAP) / 2;
+  node.right._x = (lw + H_GAP) / 2;
+}
+
+function assignPositions(node, cx, cy) {
+  node._cx = cx; node._cy = cy;
+  if (!node.leaf) {
+    assignPositions(node.left, cx + node.left._x, cy + NODE_H + V_GAP);
+    assignPositions(node.right, cx + node.right._x, cy + NODE_H + V_GAP);
+  }
+}
+
+function collectNodes(node, nodes = [], links = []) {
+  nodes.push(node);
+  if (!node.leaf) {
+    links.push({ from: node, to: node.left, label: 'yes' });
+    links.push({ from: node, to: node.right, label: 'no' });
+    collectNodes(node.left, nodes, links);
+    collectNodes(node.right, nodes, links);
+  }
+  return { nodes, links };
+}
+
+function renderTree() {
+  if (!TREE) return;
+  layoutTree(TREE);
+  assignPositions(TREE, TREE._width / 2, 30);
+  const { nodes, links } = collectNodes(TREE);
+  const classes = TREE._classes;
+
+  let minX = Infinity, maxX = -Infinity, maxY = 0;
+  for (const n of nodes) {
+    minX = Math.min(minX, n._cx - NODE_W / 2);
+    maxX = Math.max(maxX, n._cx + NODE_W / 2);
+    maxY = Math.max(maxY, n._cy + NODE_H);
+  }
+
+  const pad = 40;
+  const svgW = (maxX - minX) + pad * 2, svgH = maxY + pad * 2;
+  const offsetX = -minX + pad, offsetY = pad;
+
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}"
+    style="min-width:${svgW}px; min-height:${svgH}px;">`;
+
+  for (const link of links) {
+    const x1 = link.from._cx + offsetX, y1 = link.from._cy + NODE_H + offsetY;
+    const x2 = link.to._cx + offsetX, y2 = link.to._cy + offsetY;
+    const my = (y1 + y2) / 2;
+    svg += `<path class="tree-link" d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}" />`;
+    const lx = (x1 + x2) / 2 + (link.label === 'yes' ? -12 : 12);
+    const ly = (y1 + y2) / 2 - 4;
+    const col = link.label === 'yes' ? 'var(--green)' : 'var(--red)';
+    svg += `<text x="${lx}" y="${ly}" fill="${col}" font-size="9" text-anchor="middle"
+      font-family="var(--mono)" font-weight="600">${link.label === 'yes' ? '≤ yes' : '> no'}</text>`;
+  }
+
+  for (const node of nodes) {
+    const x = node._cx + offsetX - NODE_W / 2, y = node._cy + offsetY;
+    const sel = selectedNodeId === node.id ? ' selected' : '';
+
+    let barSvg = '', bx = 0;
+    if (TREE_MODE === 'regression' && node._rows) {
+      // Mini box showing relative mean position within parent range
+      const vals = node._rows.map(r => parseFloat(r[TREE._target])).filter(v => !isNaN(v));
+      if (vals.length > 0) {
+        const allVals = TREE._rows.map(r => parseFloat(r[TREE._target])).filter(v => !isNaN(v));
+        const gMin = Math.min(...allVals), gMax = Math.max(...allVals);
+        const range = gMax - gMin || 1;
+        const nMean = regMean(node._rows, TREE._target);
+        const nStd = regStd(node._rows, TREE._target);
+        const barW = NODE_W - 8;
+        // Draw range bar
+        barSvg += `<rect x="${x + 4}" y="${y + NODE_H - 10}" width="${barW}" height="6" rx="1" fill="var(--surface3)" opacity="0.5"/>`;
+        // Draw std range
+        const lo = Math.max(0, ((nMean - nStd - gMin) / range) * barW);
+        const hi = Math.min(barW, ((nMean + nStd - gMin) / range) * barW);
+        barSvg += `<rect x="${x + 4 + lo}" y="${y + NODE_H - 10}" width="${Math.max(1, hi - lo)}" height="6" rx="1" fill="var(--cyan)" opacity="0.5"/>`;
+        // Draw mean line
+        const mx = ((nMean - gMin) / range) * barW;
+        barSvg += `<line x1="${x + 4 + mx}" y1="${y + NODE_H - 11}" x2="${x + 4 + mx}" y2="${y + NODE_H - 3}" stroke="var(--amber)" stroke-width="1.5"/>`;
+      }
+    } else {
+      for (const cls of classes) {
+        const count = (node.classCounts || {})[cls] || 0;
+        const w = (count / node.n) * (NODE_W - 8);
+        if (w > 0) {
+          barSvg += `<rect x="${x + 4 + bx}" y="${y + NODE_H - 10}" width="${w}" height="6" rx="1"
+            fill="${CLASS_COLORS[classes.indexOf(cls) % CLASS_COLORS.length]}" opacity="0.8"/>`;
+          bx += w;
+        }
+      }
+    }
+
+    let line1 = '', line2 = '';
+    if (node.leaf) {
+      if (TREE_MODE === 'regression') {
+        const pred = typeof node.prediction === 'number' ? node.prediction : parseFloat(node.prediction);
+        line1 = `🍂 ${isNaN(pred) ? '—' : pred.toFixed(2)}`;
+        line2 = `n=${node.n}  σ=${(node.confidence ?? 0).toFixed(2)}`;
+      } else {
+        line1 = `🍂 ${node.prediction}`;
+        line2 = `n=${node.n}  ${((node.confidence ?? 0) * 100).toFixed(0)}%`;
+      }
+    } else {
+      const s = node.split;
+      line1 = s.feature;
+      line2 = s.type === 'numeric'
+        ? `≤ ${Number.isInteger(s.threshold) ? s.threshold : s.threshold.toFixed(2)}`
+        : `= "${s.category}"`;
+    }
+
+    const fill = node.leaf ? 'var(--surface2)' : 'var(--surface)';
+    const stroke = node.leaf ? 'var(--border-hi)' : 'var(--border)';
+    svg += `<g class="tree-node${sel}" data-id="${node.id}" onclick="selectNode(${node.id})">`;
+    svg += `<rect x="${x}" y="${y}" width="${NODE_W}" height="${NODE_H}" rx="6" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`;
+    svg += `<text x="${x + NODE_W/2}" y="${y + 22}" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">${escSvg(line1)}</text>`;
+    svg += `<text x="${x + NODE_W/2}" y="${y + 38}" text-anchor="middle" fill="var(--text-dim)" font-size="10">${escSvg(line2)}</text>`;
+    svg += barSvg;
+    svg += `</g>`;
+  }
+
+  svg += '</svg>';
+  document.getElementById('treeContainer').innerHTML = svg;
+  applyTransform();
+}
+
+function escSvg(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ═══════════════════════════════════════
+//  ZOOM + PAN (transform-based, unconstrained)
+// ═══════════════════════════════════════
+let panX = 0, panY = 0;
+
+function applyTransform() {
+  const svg = document.querySelector('#treeContainer svg');
+  if (svg) { svg.style.transform = `translate(${panX}px, ${panY}px) scale(${svgZoom})`; svg.style.transformOrigin = '0 0'; }
+  document.getElementById('zoomLevel').textContent = Math.round(svgZoom * 100) + '%';
+}
+
+function zoomIn() { svgZoom = Math.min(svgZoom * 1.2, 3); applyTransform(); }
+function zoomOut() { svgZoom = Math.max(svgZoom / 1.2, 0.1); applyTransform(); }
+function zoomFit() {
+  if (!TREE) return;
+  const c = document.getElementById('treeContainer'), s = c.querySelector('svg');
+  if (!s) return;
+  const sw = parseFloat(s.getAttribute('width')), sh = parseFloat(s.getAttribute('height'));
+  const cw = c.clientWidth, ch = c.clientHeight;
+  svgZoom = Math.max(Math.min(cw / sw, ch / sh, 1.5) * 0.92, 0.15);
+  // Center in viewport
+  panX = (cw - sw * svgZoom) / 2;
+  panY = (ch - sh * svgZoom) / 2;
+  applyTransform();
+}
+
+// Wheel zoom (zoom toward cursor)
+document.getElementById('treeContainer').addEventListener('wheel', function(e) {
+  e.preventDefault();
+  const rect = this.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const oldZoom = svgZoom;
+  if (e.deltaY < 0) svgZoom = Math.min(svgZoom * 1.15, 3);
+  else svgZoom = Math.max(svgZoom / 1.15, 0.1);
+  // Adjust pan so zoom centers on cursor
+  panX = mx - (mx - panX) * (svgZoom / oldZoom);
+  panY = my - (my - panY) * (svgZoom / oldZoom);
+  applyTransform();
+}, { passive: false });
+
+// Drag-to-pan (unconstrained)
+(function() {
+  const tc = document.getElementById('treeContainer');
+  let isPanning = false, didDrag = false, startX, startY, startPanX, startPanY;
+
+  tc.addEventListener('pointerdown', function(e) {
+    if (e.target.closest && (e.target.closest('.tree-node') || e.target.closest('.empty-state') || e.target.closest('button') || e.target.closest('a') || e.target.closest('select') || e.target.closest('input'))) return;
+    isPanning = true; didDrag = false; tc.classList.add('panning');
+    tc.setPointerCapture(e.pointerId);
+    startX = e.clientX; startY = e.clientY;
+    startPanX = panX; startPanY = panY;
+    e.preventDefault();
+  });
+  tc.addEventListener('pointermove', function(e) {
+    if (!isPanning) return;
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didDrag = true;
+    panX = startPanX + dx;
+    panY = startPanY + dy;
+    applyTransform();
+  });
+  tc.addEventListener('pointerup', function(e) {
+    if (!isPanning) return;
+    isPanning = false; tc.classList.remove('panning');
+    tc.releasePointerCapture(e.pointerId);
+    // Click without drag = deselect
+    if (!didDrag && selectedNodeId !== null) deselectNode();
+  });
+})();
+
+// ═══════════════════════════════════════
+//  INSPECTOR PANEL: toggle + resize
+// ═══════════════════════════════════════
+function toggleInspector() {
+  const p = document.getElementById('panelRight');
+  const btn = document.getElementById('panelToggle');
+  if (!p || !btn) return;
+  p.classList.toggle('collapsed');
+  if (p.classList.contains('collapsed')) {
+    btn.textContent = '▶ Inspector';
+    btn.style.right = '0px';
+  } else {
+    btn.textContent = '◀ Inspector';
+    btn.style.right = p.offsetWidth + 'px';
+  }
+}
+
+(function() {
+  const panel = document.getElementById('panelRight');
+  const handle = document.getElementById('resizeHandle');
+  let isResizing = false, startX, startW;
+
+  handle.addEventListener('pointerdown', function(e) {
+    isResizing = true; handle.classList.add('active');
+    handle.setPointerCapture(e.pointerId);
+    startX = e.clientX; startW = panel.offsetWidth;
+    e.preventDefault(); e.stopPropagation();
+  });
+  handle.addEventListener('pointermove', function(e) {
+    if (!isResizing) return;
+    const newW = Math.max(240, Math.min(600, startW - (e.clientX - startX)));
+    panel.style.width = newW + 'px';
+    const btn = document.getElementById('panelToggle');
+    if (btn) btn.style.right = newW + 'px';
+  });
+  handle.addEventListener('pointerup', function(e) {
+    isResizing = false; handle.classList.remove('active');
+    handle.releasePointerCapture(e.pointerId);
+  });
+})();
+
+// ═══════════════════════════════════════
+//  INSPECTOR
+// ═══════════════════════════════════════
+function findNode(node, id) {
+  if (node.id === id) return node;
+  if (node.leaf) return null;
+  return findNode(node.left, id) || findNode(node.right, id);
+}
+
+function selectNode(id) {
+  // Toggle: clicking the already-selected node deselects
+  if (selectedNodeId === id) { deselectNode(); return; }
+  selectedNodeId = id;
+  document.querySelectorAll('.tree-node').forEach(g => {
+    g.classList.toggle('selected', parseInt(g.dataset.id) === id);
+  });
+  const p = document.getElementById('panelRight');
+  if (p.classList.contains('collapsed')) toggleInspector();
+  renderInspector(id);
+}
+
+function deselectNode() {
+  selectedNodeId = null;
+  document.querySelectorAll('.tree-node').forEach(g => g.classList.remove('selected'));
+  document.getElementById('inspectorContent').innerHTML = '<div class="inspector-empty">Click a node in the tree to inspect it</div>';
+}
+
+function renderInspector(id) {
+  const node = findNode(TREE, id);
+  if (!node) return;
+  const classes = TREE._classes || [];
+  const isReg = TREE_MODE === 'regression';
+  let html = '';
+
+  if (isReg && node._rows) {
+    // Regression: show value distribution
+    const vals = node._rows.map(r => parseFloat(r[TREE._target])).filter(v => !isNaN(v));
+    const mean = regMean(node._rows, TREE._target);
+    const std = regStd(node._rows, TREE._target);
+    const min = vals.length > 0 ? Math.min(...vals) : 0;
+    const max = vals.length > 0 ? Math.max(...vals) : 0;
+    html += `<div class="inspector-section"><h4>Value Distribution (n=${node.n})</h4>`;
+    // Mini histogram
+    if (vals.length >= 2) {
+      const nBins = 20;
+      const range = max - min || 1;
+      const bins = new Array(nBins).fill(0);
+      for (const v of vals) { const b = Math.min(nBins - 1, Math.floor((v - min) / range * nBins)); bins[b]++; }
+      const maxBin = Math.max(...bins, 1);
+      const hW = 240, hH = 35;
+      html += `<svg viewBox="0 0 ${hW} ${hH}" style="display:block;width:100%;margin:0.3rem 0;">`;
+      const bw = hW / nBins;
+      for (let i = 0; i < nBins; i++) {
+        const bh = (bins[i] / maxBin) * (hH - 2);
+        html += `<rect x="${i * bw}" y="${hH - bh}" width="${bw - 1}" height="${bh}" fill="var(--cyan)" opacity="0.6" rx="1"/>`;
+      }
+      // Mean line
+      const mx = ((mean - min) / range) * hW;
+      html += `<line x1="${mx}" y1="0" x2="${mx}" y2="${hH}" stroke="var(--amber)" stroke-width="1.5"/>`;
+      html += `</svg>`;
+    }
+    html += `<div style="font-family:var(--mono);font-size:0.6rem;color:var(--text-dim);display:flex;gap:0.8rem;flex-wrap:wrap;">
+      <span>μ = <span style="color:var(--amber)">${mean.toFixed(2)}</span></span>
+      <span>σ = <span style="color:var(--cyan)">${std.toFixed(2)}</span></span>
+      <span>range: ${min.toFixed(1)}–${max.toFixed(1)}</span>
+    </div></div>`;
+  } else {
+    // Classification: class distribution bar
+    html += `<div class="inspector-section"><h4>Class Distribution (n=${node.n})</h4><div class="class-bar">`;
+    for (const cls of classes) {
+      const count = (node.classCounts || {})[cls] || 0;
+      const pct = node.n ? (count / node.n) * 100 : 0;
+      if (count > 0) {
+        html += `<div class="class-bar-seg" style="width:${pct}%;background:${CLASS_COLORS[classes.indexOf(cls) % CLASS_COLORS.length]}"
+          title="${cls}: ${count} (${pct.toFixed(1)}%)"></div>`;
+      }
+    }
+    html += `</div><div class="class-legend">`;
+    for (const cls of classes) {
+      const count = (node.classCounts || {})[cls] || 0;
+      if (count > 0) {
+        html += `<div class="class-legend-item"><div class="class-dot" style="background:${CLASS_COLORS[classes.indexOf(cls) % CLASS_COLORS.length]}"></div>
+          ${cls}: ${count} (${(count/node.n*100).toFixed(1)}%)</div>`;
+      }
+    }
+    html += `</div></div>`;
+  }
+
+  const gini = node.gini ?? 0;
+  const impLabel = isReg ? 'Variance' : 'Gini';
+  html += `<div class="inspector-section"><h4>Metrics</h4><div class="metric-grid">`;
+  html += `<div class="metric-cell"><div class="mc-label">${impLabel}</div><div class="mc-val">${gini.toFixed(4)}</div></div>`;
+  html += `<div class="metric-cell"><div class="mc-label">Samples</div><div class="mc-val">${node.n}</div></div>`;
+  if (isReg) {
+    html += `<div class="metric-cell"><div class="mc-label">Prediction</div><div class="mc-val" style="font-size:0.7rem">${typeof node.prediction === 'number' ? node.prediction.toFixed(2) : node.prediction}</div></div>`;
+    html += `<div class="metric-cell"><div class="mc-label">Std Dev</div><div class="mc-val">${(node.confidence ?? 0).toFixed(2)}</div></div>`;
+  } else {
+    html += `<div class="metric-cell"><div class="mc-label">Prediction</div><div class="mc-val" style="font-size:0.7rem">${node.prediction || '—'}</div></div>`;
+    html += `<div class="metric-cell"><div class="mc-label">Confidence</div><div class="mc-val">${((node.confidence ?? 0)*100).toFixed(1)}%</div></div>`;
+  }
+  if (!node.leaf && node.split) {
+    html += `<div class="metric-cell"><div class="mc-label">Gain</div><div class="mc-val">${(node.split.gain ?? 0).toFixed(4)}</div></div>`;
+    html += `<div class="metric-cell"><div class="mc-label">Depth</div><div class="mc-val">${node.depth}</div></div>`;
+  }
+  html += `</div></div>`;
+
+  if (!node.leaf && node.split) {
+    const s = node.split;
+    const childLabel = isReg ? 'Var' : 'Gini';
+    html += `<div class="inspector-section"><h4>Split</h4><div class="split-info">`;
+    if (s.type === 'numeric') {
+      const thr = s.threshold ?? 0;
+      html += `IF <span class="split-feature">${s.feature}</span> ≤ <span class="split-threshold">${
+        Number.isInteger(thr) ? thr : thr.toFixed(3)}</span><br>`;
+      html += `→ left: ${s.nLeft ?? '?'} samples (${childLabel} ${(s.giniLeft ?? 0).toFixed(3)})<br>→ right: ${s.nRight ?? '?'} samples (${childLabel} ${(s.giniRight ?? 0).toFixed(3)})`;
+    } else {
+      html += `IF <span class="split-feature">${s.feature}</span> = <span class="split-threshold">"${s.category}"</span><br>`;
+      html += `→ yes: ${s.nLeft ?? '?'} samples (${childLabel} ${(s.giniLeft ?? 0).toFixed(3)})<br>→ no: ${s.nRight ?? '?'} samples (${childLabel} ${(s.giniRight ?? 0).toFixed(3)})`;
+    }
+    html += `</div></div>`;
+  }
+
+  const path = getPathTo(TREE, id);
+  if (path.length > 0) {
+    html += `<div class="inspector-section"><h4>Path to Node</h4><div class="split-info">`;
+    for (const step of path) {
+      if (step.split.type === 'numeric') {
+        html += `<span class="split-feature">${step.split.feature}</span> ${step.direction === 'left' ? '≤' : '>'} `;
+        html += `<span class="split-threshold">${Number.isInteger(step.split.threshold) ? step.split.threshold : step.split.threshold.toFixed(3)}</span><br>`;
+      } else {
+        html += `<span class="split-feature">${step.split.feature}</span> ${step.direction === 'left' ? '=' : '≠'} `;
+        html += `<span class="split-threshold">"${step.split.category}"</span><br>`;
+      }
+    }
+    html += `</div></div>`;
+  }
+
+  document.getElementById('inspectorContent').innerHTML = html;
+
+  // ── Bonsai controls (rendered separately so onclick works) ──
+  const bonsaiDiv = document.createElement('div');
+  bonsaiDiv.className = 'bonsai-section';
+  bonsaiDiv.innerHTML = `<h4>✂ Bonsai</h4>`;
+
+  const row1 = document.createElement('div');
+  row1.className = 'bonsai-row';
+
+  if (!node.leaf) {
+    const pruneBtn = document.createElement('button');
+    pruneBtn.className = 'bonsai-btn danger';
+    pruneBtn.textContent = '✂ Prune to Leaf';
+    pruneBtn.onclick = () => pruneToLeaf(id);
+    row1.appendChild(pruneBtn);
+  }
+
+  if (node.leaf && node._rows && node._rows.length >= (parseInt(document.getElementById('minSplit').value) || 6)) {
+    const regrowBtn = document.createElement('button');
+    regrowBtn.className = 'bonsai-btn grow';
+    regrowBtn.textContent = '🌱 Regrow Subtree';
+    regrowBtn.onclick = () => regrowFromLeaf(id);
+    row1.appendChild(regrowBtn);
+  }
+  bonsaiDiv.appendChild(row1);
+
+  // ── Top alternative splits by Gini ──
+  if (node._rows && node._rows.length >= 6) {
+    const altDiv = document.createElement('div');
+    const splitsLabel = TREE_MODE === 'regression' ? 'TOP SPLITS BY VARIANCE' : 'TOP SPLITS BY GINI';
+    altDiv.innerHTML = `<div style="font-family:var(--mono);font-size:0.58rem;color:var(--text-faint);margin-top:0.3rem;margin-bottom:0.3rem;">${splitsLabel}</div>`;
+    const alts = findTopSplits(node._rows, TREE._features, TREE._target, DATA.types,
+      parseInt(document.getElementById('minLeaf').value) || 3, 6);
+    const altList = document.createElement('div');
+    altList.className = 'alt-splits';
+    for (const alt of alts) {
+      const item = document.createElement('div');
+      item.className = 'alt-split-item';
+      if (!node.leaf && node.split &&
+          node.split.feature === alt.feature &&
+          ((alt.type === 'numeric' && Math.abs((node.split.threshold||0) - (alt.threshold||0)) < 0.001) ||
+           (alt.type === 'categorical' && node.split.category === alt.category))) {
+        item.classList.add('current');
+      }
+      item.innerHTML = `<span class="alt-gain">${(alt.gain ?? 0).toFixed(3)}</span>
+        <span class="alt-feat">${alt.feature}</span>
+        <span class="alt-val">${alt.type === 'numeric' ? '≤ ' + (Number.isInteger(alt.threshold) ? alt.threshold : (alt.threshold ?? 0).toFixed(2)) : '= "' + alt.category + '"'}</span>`;
+      item.onclick = () => forceSplit(id, alt);
+      altList.appendChild(item);
+    }
+    altDiv.appendChild(altList);
+    bonsaiDiv.appendChild(altDiv);
+  }
+
+  // ── Custom split ──
+  if (node._rows && node._rows.length >= 4) {
+    const customDiv = document.createElement('div');
+    customDiv.style.marginTop = '0.5rem';
+    customDiv.innerHTML = '<div style="font-family:var(--mono);font-size:0.58rem;color:var(--text-faint);margin-bottom:0.3rem;">CUSTOM SPLIT</div>';
+
+    const form = document.createElement('div');
+    form.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;';
+
+    const featSel = document.createElement('select');
+    featSel.style.cssText = 'flex:1;min-width:80px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:0.25rem 0.3rem;border-radius:3px;font-family:var(--mono);font-size:0.62rem;';
+    for (const f of TREE._features) {
+      const o = document.createElement('option');
+      o.value = f; o.textContent = f + (DATA.types[f] === 'numeric' ? ' #' : ' ●');
+      featSel.appendChild(o);
+    }
+
+    const valInput = document.createElement('input');
+    valInput.style.cssText = 'width:70px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:0.25rem 0.3rem;border-radius:3px;font-family:var(--mono);font-size:0.62rem;';
+
+    const catSel = document.createElement('select');
+    catSel.style.cssText = 'width:90px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:0.25rem 0.3rem;border-radius:3px;font-family:var(--mono);font-size:0.62rem;display:none;';
+
+    const opLabel = document.createElement('span');
+    opLabel.style.cssText = 'font-family:var(--mono);font-size:0.62rem;color:var(--text-dim);';
+    opLabel.textContent = '≤';
+
+    // Gini chart container
+    const giniChartBox = document.createElement('div');
+    giniChartBox.style.cssText = 'width:100%;margin-top:0.4rem;';
+
+    function updateCustomUI() {
+      const feat = featSel.value;
+      giniChartBox.innerHTML = '';
+      if (DATA.types[feat] === 'numeric') {
+        valInput.style.display = '';
+        catSel.style.display = 'none';
+        opLabel.textContent = '≤';
+        const vals = node._rows.map(r => parseFloat(r[feat])).filter(v => !isNaN(v)).sort((a,b) => a - b);
+        if (vals.length > 0) {
+          valInput.value = vals[Math.floor(vals.length / 2)].toFixed(2);
+          renderNumericGiniChart(node._rows, feat, TREE._target, giniChartBox, valInput, id);
+        }
+      } else {
+        valInput.style.display = 'none';
+        catSel.style.display = '';
+        opLabel.textContent = '=';
+        catSel.innerHTML = '';
+        const cats = [...new Set(node._rows.map(r => r[feat]).filter(v => v !== '' && v !== 'NA'))].sort();
+        for (const c of cats) {
+          const o = document.createElement('option');
+          o.value = c; o.textContent = c;
+          catSel.appendChild(o);
+        }
+        renderCatGiniTable(node._rows, feat, TREE._target, giniChartBox, catSel, id);
+      }
+    }
+    featSel.onchange = updateCustomUI;
+    valInput.oninput = () => {
+      // Update threshold line in chart
+      const line = giniChartBox.querySelector('.gini-threshold-line');
+      if (line) {
+        const v = parseFloat(valInput.value);
+        const svg = giniChartBox.querySelector('svg');
+        if (svg && !isNaN(v)) {
+          const minV = parseFloat(svg.dataset.minv), maxV = parseFloat(svg.dataset.maxv);
+          const cw = parseFloat(svg.dataset.cw), pad = parseFloat(svg.dataset.pad);
+          const range = maxV - minV || 1;
+          const x = pad + ((v - minV) / range) * cw;
+          line.setAttribute('x1', x); line.setAttribute('x2', x);
+        }
+      }
+    };
+    // Default to current split's feature + value
+    if (!node.leaf && node.split) {
+      featSel.value = node.split.feature;
+    }
+    updateCustomUI();
+    // Override median with actual current threshold/category
+    if (!node.leaf && node.split) {
+      if (node.split.type === 'numeric' && node.split.threshold != null) {
+        valInput.value = Number.isInteger(node.split.threshold) ? node.split.threshold : node.split.threshold.toFixed(2);
+        valInput.dispatchEvent(new Event('input'));
+      } else if (node.split.type === 'categorical' && node.split.category) {
+        catSel.value = node.split.category;
+      }
+    }
+
+    const applyBtn = document.createElement('button');
+    applyBtn.className = 'bonsai-btn';
+    applyBtn.textContent = '⚡ Apply';
+    applyBtn.style.cssText += 'white-space:nowrap;';
+    applyBtn.onclick = () => {
+      const feat = featSel.value;
+      let split;
+      if (DATA.types[feat] === 'numeric') {
+        const thr = parseFloat(valInput.value);
+        if (isNaN(thr)) { showToast('Enter a numeric threshold'); return; }
+        split = { feature: feat, type: 'numeric', threshold: thr, gain: 0 };
+      } else {
+        const cat = catSel.value;
+        if (!cat) { showToast('Select a category'); return; }
+        split = { feature: feat, type: 'categorical', category: cat, gain: 0 };
+      }
+      forceSplit(id, split);
+    };
+
+    form.appendChild(featSel);
+    form.appendChild(opLabel);
+    form.appendChild(valInput);
+    form.appendChild(catSel);
+    form.appendChild(applyBtn);
+    customDiv.appendChild(form);
+    customDiv.appendChild(giniChartBox);
+    bonsaiDiv.appendChild(customDiv);
+  }
+
+  document.getElementById('inspectorContent').appendChild(bonsaiDiv);
+}
+
+// ═══════════════════════════════════════
+//  GINI CHARTS
+// ═══════════════════════════════════════
+
+function computeGiniCurve(rows, feat, target, nSteps) {
+  const isReg = TREE_MODE === 'regression';
+  const vals = rows.map(r => ({ v: parseFloat(r[feat]), cls: r[target], y: parseFloat(r[target]) }))
+    .filter(d => !isNaN(d.v) && (isReg ? !isNaN(d.y) : true)).sort((a, b) => a.v - b.v);
+  if (vals.length < 4) return [];
+
+  const n = vals.length;
+  const minV = vals[0].v, maxV = vals[n - 1].v;
+  if (maxV === minV) return [];
+
+  const curve = [];
+  let vi = 0;
+
+  if (isReg) {
+    // Incremental variance via running sums
+    let lN = 0, lSum = 0, lSqSum = 0;
+    let rN = n, rSum = vals.reduce((a, d) => a + d.y, 0), rSqSum = vals.reduce((a, d) => a + d.y * d.y, 0);
+    for (let step = 0; step <= nSteps; step++) {
+      const threshold = minV + (step / nSteps) * (maxV - minV);
+      while (vi < n && vals[vi].v <= threshold) {
+        lN++; lSum += vals[vi].y; lSqSum += vals[vi].y * vals[vi].y;
+        rN--; rSum -= vals[vi].y; rSqSum -= vals[vi].y * vals[vi].y;
+        vi++;
+      }
+      if (lN === 0 || rN === 0) continue;
+      const lVar = Math.max(0, lSqSum / lN - (lSum / lN) ** 2);
+      const rVar = Math.max(0, rSqSum / rN - (rSum / rN) ** 2);
+      const wVar = (lN * lVar + rN * rVar) / (lN + rN);
+      curve.push({ threshold, gini: wVar });
+    }
+  } else {
+    // Incremental Gini
+    const allCounts = countClasses(rows, target);
+    const leftCounts = {}, rightCounts = { ...allCounts };
+    const nanRows = rows.filter(r => isNaN(parseFloat(r[feat])));
+    for (const nr of nanRows) { rightCounts[nr[target]]--; if (rightCounts[nr[target]] === 0) delete rightCounts[nr[target]]; }
+    let leftN = 0, rightN = vals.length;
+    for (let step = 0; step <= nSteps; step++) {
+      const threshold = minV + (step / nSteps) * (maxV - minV);
+      while (vi < n && vals[vi].v <= threshold) {
+        leftCounts[vals[vi].cls] = (leftCounts[vals[vi].cls] || 0) + 1;
+        rightCounts[vals[vi].cls]--;
+        if (rightCounts[vals[vi].cls] === 0) delete rightCounts[vals[vi].cls];
+        leftN++; rightN--;
+        vi++;
+      }
+      if (leftN === 0 || rightN === 0) continue;
+      const wGini = (leftN * giniImpurity(leftCounts, leftN) + rightN * giniImpurity(rightCounts, rightN)) / (leftN + rightN);
+      curve.push({ threshold, gini: wGini });
+    }
+  }
+  return curve;
+}
+
+function renderNumericGiniChart(rows, feat, target, container, valInput, nodeId) {
+  const STEPS = 80;
+  const curve = computeGiniCurve(rows, feat, target, STEPS);
+  if (curve.length === 0) { container.innerHTML = '<div style="font-family:var(--mono);font-size:0.55rem;color:var(--text-faint);">Not enough distinct values</div>'; return; }
+
+  const W = 300, H = 80, PAD_L = 4, PAD_R = 4, PAD_T = 6, PAD_B = 14;
+  const cw = W - PAD_L - PAD_R, ch = H - PAD_T - PAD_B;
+  const minV = curve[0].threshold, maxV = curve[curve.length - 1].threshold;
+  const minG = Math.min(...curve.map(c => c.gini));
+  const maxG = Math.max(...curve.map(c => c.gini));
+  const gRange = (maxG - minG) || 0.01;
+
+  function tx(v) { return PAD_L + ((v - minV) / (maxV - minV || 1)) * cw; }
+  function ty(g) { return PAD_T + (1 - (g - minG) / gRange) * ch; }
+
+  // Build path
+  const pts = curve.map(c => `${tx(c.threshold).toFixed(1)},${ty(c.gini).toFixed(1)}`);
+  const pathD = 'M' + pts.join('L');
+
+  // Fill area
+  const fillD = pathD + `L${tx(maxV).toFixed(1)},${(PAD_T + ch).toFixed(1)}L${PAD_L},${(PAD_T + ch).toFixed(1)}Z`;
+
+  // Best split marker
+  const best = curve.reduce((a, b) => a.gini < b.gini ? a : b);
+
+  // Current threshold line
+  const curThr = parseFloat(valInput.value);
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" style="display:block;width:100%;"
+    data-minv="${minV}" data-maxv="${maxV}" data-cw="${cw}" data-pad="${PAD_L}">`;
+
+  // Background
+  svg += `<rect x="${PAD_L}" y="${PAD_T}" width="${cw}" height="${ch}" fill="var(--bg)" rx="2" stroke="var(--border)" stroke-width="0.5"/>`;
+
+  // Fill under curve
+  svg += `<path d="${fillD}" fill="var(--green-dim)" opacity="0.5"/>`;
+
+  // Curve line
+  svg += `<path d="${pathD}" fill="none" stroke="var(--green)" stroke-width="1.5" opacity="0.8"/>`;
+
+  // Best point
+  svg += `<circle cx="${tx(best.threshold)}" cy="${ty(best.gini)}" r="3" fill="var(--green-bright)" stroke="var(--bg)" stroke-width="1"/>`;
+
+  // Current threshold line
+  if (!isNaN(curThr) && curThr >= minV && curThr <= maxV) {
+    svg += `<line class="gini-threshold-line" x1="${tx(curThr)}" y1="${PAD_T}" x2="${tx(curThr)}" y2="${PAD_T + ch}" stroke="var(--amber)" stroke-width="1.5" stroke-dasharray="3,2"/>`;
+  } else {
+    svg += `<line class="gini-threshold-line" x1="${tx(curThr)}" y1="${PAD_T}" x2="${tx(curThr)}" y2="${PAD_T + ch}" stroke="var(--amber)" stroke-width="1.5" stroke-dasharray="3,2" opacity="0"/>`;
+  }
+
+  // Hover target (invisible rect)
+  svg += `<rect class="gini-hover-area" x="${PAD_L}" y="${PAD_T}" width="${cw}" height="${ch}" fill="transparent" style="cursor:crosshair;"/>`;
+
+  // Hover line & tooltip (initially hidden)
+  svg += `<line class="gini-hover-line" x1="0" y1="${PAD_T}" x2="0" y2="${PAD_T + ch}" stroke="var(--text-faint)" stroke-width="0.5" opacity="0"/>`;
+  svg += `<text class="gini-hover-text" x="0" y="${PAD_T - 1}" fill="var(--text)" font-size="8" font-family="var(--mono)" text-anchor="middle" opacity="0"></text>`;
+
+  // Axis labels
+  svg += `<text x="${PAD_L}" y="${H - 1}" fill="var(--text-faint)" font-size="7" font-family="var(--mono)">${Number.isInteger(minV) ? minV : minV.toFixed(1)}</text>`;
+  svg += `<text x="${PAD_L + cw}" y="${H - 1}" fill="var(--text-faint)" font-size="7" font-family="var(--mono)" text-anchor="end">${Number.isInteger(maxV) ? maxV : maxV.toFixed(1)}</text>`;
+  const chartLabel = TREE_MODE === 'regression' ? 'weighted variance' : 'weighted gini';
+  svg += `<text x="${PAD_L + cw / 2}" y="${H - 1}" fill="var(--text-faint)" font-size="7" font-family="var(--mono)" text-anchor="middle">${chartLabel}</text>`;
+
+  svg += '</svg>';
+  container.innerHTML = svg;
+
+  // Interaction
+  const svgEl = container.querySelector('svg');
+  const hoverArea = svgEl.querySelector('.gini-hover-area');
+  const hoverLine = svgEl.querySelector('.gini-hover-line');
+  const hoverText = svgEl.querySelector('.gini-hover-text');
+
+  hoverArea.addEventListener('mousemove', function(e) {
+    const rect = svgEl.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const svgScale = rect.width / W;
+    const svgX = mx / svgScale;
+    const frac = Math.max(0, Math.min(1, (svgX - PAD_L) / cw));
+    const threshold = minV + frac * (maxV - minV);
+    // Find nearest curve point
+    const idx = Math.round(frac * STEPS);
+    const pt = curve[Math.max(0, Math.min(idx, curve.length - 1))];
+    hoverLine.setAttribute('x1', svgX); hoverLine.setAttribute('x2', svgX);
+    hoverLine.setAttribute('opacity', '1');
+    hoverText.setAttribute('x', svgX);
+    hoverText.textContent = `${threshold.toFixed(1)} → ${pt.gini.toFixed(3)}`;
+    hoverText.setAttribute('opacity', '1');
+  });
+
+  hoverArea.addEventListener('mouseleave', function() {
+    hoverLine.setAttribute('opacity', '0');
+    hoverText.setAttribute('opacity', '0');
+  });
+
+  hoverArea.addEventListener('click', function(e) {
+    const rect = svgEl.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const svgScale = rect.width / W;
+    const svgX = mx / svgScale;
+    const frac = Math.max(0, Math.min(1, (svgX - PAD_L) / cw));
+    const threshold = minV + frac * (maxV - minV);
+    valInput.value = threshold.toFixed(2);
+    // Update threshold line
+    const tLine = svgEl.querySelector('.gini-threshold-line');
+    tLine.setAttribute('x1', svgX); tLine.setAttribute('x2', svgX);
+    tLine.setAttribute('opacity', '1');
+  });
+}
+
+function renderCatGiniTable(rows, feat, target, container, catSel, nodeId) {
+  const cats = [...new Set(rows.map(r => r[feat]).filter(v => v !== '' && v !== 'NA'))].sort();
+  if (cats.length < 2) { container.innerHTML = ''; return; }
+
+  const isReg = TREE_MODE === 'regression';
+  const parentImp = isReg ? regVariance(rows, target) : giniImpurity(countClasses(rows, target), rows.length);
+  const results = [];
+
+  for (const cat of cats) {
+    const leftRows = rows.filter(r => r[feat] === cat);
+    const rightRows = rows.filter(r => r[feat] !== cat && r[feat] !== '' && r[feat] !== 'NA');
+    if (leftRows.length === 0 || rightRows.length === 0) { results.push({ cat, gain: 0, n: leftRows.length }); continue; }
+    const total = leftRows.length + rightRows.length;
+    let wImp;
+    if (isReg) {
+      wImp = (leftRows.length * regVariance(leftRows, target) + rightRows.length * regVariance(rightRows, target)) / total;
+    } else {
+      const lc = countClasses(leftRows, target), rc = countClasses(rightRows, target);
+      wImp = (leftRows.length * giniImpurity(lc, leftRows.length) + rightRows.length * giniImpurity(rc, rightRows.length)) / total;
+    }
+    results.push({ cat, gain: parentImp - wImp, n: leftRows.length, wImp });
+  }
+
+  const maxGain = Math.max(...results.map(r => r.gain), 0.001);
+  let html = '<div style="margin-top:0.3rem;">';
+  for (const r of results.sort((a, b) => b.gain - a.gain)) {
+    const barW = (r.gain / maxGain) * 100;
+    const selected = catSel.value === r.cat;
+    html += `<div class="cat-gini-row${selected ? ' cat-selected' : ''}" data-cat="${r.cat}" style="
+      display:flex;align-items:center;gap:0.4rem;padding:0.2rem 0.4rem;margin-bottom:0.15rem;
+      border-radius:3px;cursor:pointer;border:1px solid ${selected ? 'var(--cyan)' : 'var(--border)'};
+      background:${selected ? 'var(--cyan-dim)' : 'var(--bg)'};transition:all 0.1s;
+      font-family:var(--mono);font-size:0.58rem;">
+      <span style="min-width:60px;color:var(--text-dim);">${r.cat}</span>
+      <span style="flex:1;height:8px;background:var(--surface3);border-radius:2px;overflow:hidden;">
+        <span style="display:block;height:100%;width:${barW}%;background:var(--green);border-radius:2px;"></span>
+      </span>
+      <span style="min-width:40px;text-align:right;color:var(--green-bright);font-weight:600;">${r.gain.toFixed(3)}</span>
+      <span style="min-width:24px;text-align:right;color:var(--text-faint);">n=${r.n}</span>
+    </div>`;
+  }
+  html += '</div>';
+  container.innerHTML = html;
+
+  // Click to select category
+  container.querySelectorAll('.cat-gini-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const cat = row.dataset.cat;
+      catSel.value = cat;
+      // Update highlight
+      container.querySelectorAll('.cat-gini-row').forEach(r => {
+        const isSel = r.dataset.cat === cat;
+        r.style.borderColor = isSel ? 'var(--cyan)' : 'var(--border)';
+        r.style.background = isSel ? 'var(--cyan-dim)' : 'var(--bg)';
+      });
+    });
+    row.addEventListener('dblclick', () => {
+      // Double-click to apply directly
+      catSel.value = row.dataset.cat;
+      const split = { feature: feat, type: 'categorical', category: row.dataset.cat, gain: 0 };
+      forceSplit(nodeId, split);
+    });
+  });
+}
+
+function getPathTo(node, targetId, path = []) {
+  if (node.id === targetId) return path;
+  if (node.leaf) return null;
+  return getPathTo(node.left, targetId, [...path, { split: node.split, direction: 'left' }])
+    || getPathTo(node.right, targetId, [...path, { split: node.split, direction: 'right' }]);
+}
+
+// ═══════════════════════════════════════
+//  BONSAI: tree mutation engine
+// ═══════════════════════════════════════
+const undoStack = [];
+const MAX_UNDO = 30;
+
+function deepCloneTree(node) {
+  if (!node) return null;
+  const clone = { ...node, classCounts: { ...node.classCounts } };
+  // Keep _rows as shared reference (no need to deep copy data)
+  if (!node.leaf) {
+    clone.left = deepCloneTree(node.left);
+    clone.right = deepCloneTree(node.right);
+  }
+  return clone;
+}
+
+function pushUndo(label) {
+  // Save full tree state + metadata
+  undoStack.push({
+    tree: deepCloneTree(TREE),
+    label,
+    _target: TREE._target,
+    _features: [...TREE._features],
+    _classes: [...TREE._classes],
+    _rows: TREE._rows,
+  });
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+  updateUndoBar();
+}
+
+function undoEdit() {
+  if (undoStack.length === 0) return;
+  const state = undoStack.pop();
+  TREE = state.tree;
+  TREE._target = state._target;
+  TREE._features = state._features;
+  TREE._classes = state._classes;
+  TREE._rows = state._rows;
+  refreshAfterEdit();
+  showToast('Undo: ' + state.label);
+}
+
+function updateUndoBar() {
+  const bar = document.getElementById('undoBar');
+  if (!bar) return;
+  if (undoStack.length === 0) {
+    bar.style.display = 'none';
+  } else {
+    bar.style.display = '';
+    bar.querySelector('.edit-count').textContent = undoStack.length;
+  }
+}
+
+function refreshAfterEdit() {
+  // Save selected node's row ref before re-IDing
+  let selectedRows = null;
+  if (selectedNodeId !== null) {
+    const selNode = findNode(TREE, selectedNodeId);
+    if (selNode) selectedRows = selNode._rows;
+  }
+  // Reassign IDs and fix depths
+  nodeIdCounter = 0;
+  fixTreeMeta(TREE, 0);
+  // Update stats
+  const acc = treeAccuracy(TREE, TREE._rows, TREE._target);
+  const stats = countNodes(TREE);
+  const metricLabel = TREE_MODE === 'regression' ? 'R²' : 'Accuracy';
+  const metricVal = TREE_MODE === 'regression' ? acc.toFixed(3) : (acc * 100).toFixed(1) + '%';
+  document.getElementById('statsBar').innerHTML = `
+    <span>Rows: <span class="stat-val">${TREE._rows.length}</span></span>
+    <span>Nodes: <span class="stat-val">${stats.total}</span></span>
+    <span>Leaves: <span class="stat-val">${stats.leaves}</span></span>
+    <span>Depth: <span class="stat-val">${stats.maxDepth}</span></span>
+    <span>${metricLabel}: <span class="stat-val">${metricVal}</span></span>
+    <span>Edits: <span class="stat-val" style="color:var(--amber)">${undoStack.length}</span></span>
+  `;
+  renderTree();
+  renderRules();
+  updateUndoBar();
+  if (selectedRows) {
+    const node = findNodeWithRows(TREE, selectedRows);
+    if (node) { selectedNodeId = node.id; selectNode(node.id); }
+    else deselectNode();
+  }
+}
+
+function fixTreeMeta(node, depth) {
+  node.id = nodeIdCounter++;
+  node.depth = depth;
+  if (!node.leaf) {
+    fixTreeMeta(node.left, depth + 1);
+    fixTreeMeta(node.right, depth + 1);
+  }
+}
+
+// ── Prune to Leaf ──
+function pruneToLeaf(nodeId) {
+  const node = findNode(TREE, nodeId);
+  if (!node || node.leaf) return;
+  pushUndo('Prune node ' + node.split.feature);
+  // Convert to leaf: keep classCounts, prediction, n, _rows
+  node.leaf = true;
+  delete node.left;
+  delete node.right;
+  delete node.split;
+  refreshAfterEdit();
+  // Reselect
+  const newNode = findNodeWithRows(TREE, node._rows);
+  if (newNode) selectNode(newNode.id);
+  showToast('✂ Pruned to leaf');
+}
+
+// ── Regrow from Leaf ──
+function regrowFromLeaf(nodeId) {
+  const node = findNode(TREE, nodeId);
+  if (!node || !node.leaf || !node._rows) return;
+  pushUndo('Regrow from leaf');
+  const maxDepth = parseInt(document.getElementById('maxDepth').value) || 5;
+  const minLeaf = parseInt(document.getElementById('minLeaf').value) || 3;
+  const minSplit = parseInt(document.getElementById('minSplit').value) || 6;
+  const depthBudget = maxDepth - node.depth;
+  if (depthBudget <= 0) { showToast('At max depth — increase Max Depth first'); return; }
+
+  const subtree = buildTree(node._rows, TREE._features, TREE._target, DATA.types,
+    node.depth, node.depth + depthBudget, minLeaf, minSplit);
+  // Graft subtree onto parent
+  Object.assign(node, subtree);
+  refreshAfterEdit();
+  showToast('🌱 Regrew subtree');
+}
+
+// ── Force Split ──
+function forceSplit(nodeId, split) {
+  const node = findNode(TREE, nodeId);
+  if (!node || !node._rows) return;
+
+  // Check if this is already the current split
+  if (!node.leaf && node.split && node.split.feature === split.feature) {
+    if ((split.type === 'numeric' && Math.abs((node.split.threshold||0) - (split.threshold||0)) < 0.001) ||
+        (split.type === 'categorical' && node.split.category === split.category)) {
+      return; // Already this split
+    }
+  }
+
+  pushUndo('Force split: ' + split.feature);
+  const [leftRows, rightRows] = splitRows(node._rows, split);
+  if (leftRows.length === 0 || rightRows.length === 0) {
+    showToast('Split produces an empty child — skipped');
+    undoStack.pop();
+    return;
+  }
+
+  // Compute proper split stats
+  const isReg = TREE_MODE === 'regression';
+  let parentImp, lImp, rImp;
+  if (isReg) {
+    parentImp = regVariance(node._rows, TREE._target);
+    lImp = regVariance(leftRows, TREE._target);
+    rImp = regVariance(rightRows, TREE._target);
+  } else {
+    parentImp = giniImpurity(countClasses(node._rows, TREE._target), node._rows.length);
+    const lc = countClasses(leftRows, TREE._target), rc = countClasses(rightRows, TREE._target);
+    lImp = giniImpurity(lc, leftRows.length); rImp = giniImpurity(rc, rightRows.length);
+  }
+  const total = leftRows.length + rightRows.length;
+  split.gain = parentImp - (leftRows.length * lImp + rightRows.length * rImp) / total;
+  split.giniLeft = lImp;
+  split.giniRight = rImp;
+  split.nLeft = leftRows.length;
+  split.nRight = rightRows.length;
+
+  const maxDepth = parseInt(document.getElementById('maxDepth').value) || 5;
+  const minLeaf = parseInt(document.getElementById('minLeaf').value) || 3;
+  const minSplit = parseInt(document.getElementById('minSplit').value) || 6;
+
+  node.leaf = false;
+  node.split = split;
+  node.left = buildTree(leftRows, TREE._features, TREE._target, DATA.types,
+    node.depth + 1, maxDepth, minLeaf, minSplit);
+  node.right = buildTree(rightRows, TREE._features, TREE._target, DATA.types,
+    node.depth + 1, maxDepth, minLeaf, minSplit);
+
+  refreshAfterEdit();
+  const newNode = findNodeWithRows(TREE, node._rows);
+  if (newNode) selectNode(newNode.id);
+  showToast('🔀 Forced split on ' + split.feature);
+}
+
+function findNodeWithRows(node, rows) {
+  if (node._rows === rows) return node;
+  if (node.leaf) return null;
+  return findNodeWithRows(node.left, rows) || findNodeWithRows(node.right, rows);
+}
+
+// ── Find top N splits for a node's rows ──
+function findTopSplits(rows, features, target, types, minLeaf, maxResults) {
+  const n = rows.length;
+  const isReg = TREE_MODE === 'regression';
+  let parentImpurity;
+  if (isReg) {
+    parentImpurity = regVariance(rows, target);
+  } else {
+    const parentCounts = countClasses(rows, target);
+    parentImpurity = giniImpurity(parentCounts, n);
+  }
+  const allSplits = [];
+
+  for (const feat of features) {
+    if (feat === target) continue;
+    if (types[feat] === 'numeric') {
+      const valid = rows.filter(r => r[feat] !== '' && r[feat] !== 'NA' && !isNaN(parseFloat(r[feat])));
+      if (valid.length < 2) continue;
+      let bestForFeat = null;
+
+      if (isReg) {
+        const sorted = valid.map(r => ({ val: parseFloat(r[feat]), y: parseFloat(r[target]) })).sort((a, b) => a.val - b.val);
+        let lN = 0, lSum = 0, lSqSum = 0;
+        let rN = sorted.length, rSum = sorted.reduce((a, d) => a + d.y, 0), rSqSum = sorted.reduce((a, d) => a + d.y * d.y, 0);
+        for (let i = 0; i < sorted.length - 1; i++) {
+          lN++; lSum += sorted[i].y; lSqSum += sorted[i].y * sorted[i].y;
+          rN--; rSum -= sorted[i].y; rSqSum -= sorted[i].y * sorted[i].y;
+          if (sorted[i].val === sorted[i + 1].val) continue;
+          if (lN < minLeaf || rN < minLeaf) continue;
+          const lVar = Math.max(0, lSqSum / lN - (lSum / lN) ** 2);
+          const rVar = Math.max(0, rSqSum / rN - (rSum / rN) ** 2);
+          const gain = parentImpurity - (lN * lVar + rN * rVar) / (lN + rN);
+          if (!bestForFeat || gain > bestForFeat.gain) {
+            bestForFeat = { feature: feat, type: 'numeric', threshold: (sorted[i].val + sorted[i + 1].val) / 2, gain, nLeft: lN, nRight: rN };
+          }
+        }
+      } else {
+        const sorted = valid.map(r => ({ val: parseFloat(r[feat]), cls: r[target] })).sort((a, b) => a.val - b.val);
+        const parentCounts2 = countClasses(rows, target);
+        const leftCounts = {}, rightCounts = { ...parentCounts2 };
+        const missing = rows.filter(r => r[feat] === '' || r[feat] === 'NA' || isNaN(parseFloat(r[feat])));
+        for (const m of missing) { rightCounts[m[target]]--; if (rightCounts[m[target]] === 0) delete rightCounts[m[target]]; }
+        let leftN = 0, rightN = valid.length;
+        for (let i = 0; i < sorted.length - 1; i++) {
+          const cls = sorted[i].cls;
+          leftCounts[cls] = (leftCounts[cls] || 0) + 1;
+          rightCounts[cls]--; if (rightCounts[cls] === 0) delete rightCounts[cls];
+          leftN++; rightN--;
+          if (sorted[i].val === sorted[i + 1].val) continue;
+          if (leftN < minLeaf || rightN < minLeaf) continue;
+          const wGini = (leftN * giniImpurity(leftCounts, leftN) + rightN * giniImpurity(rightCounts, rightN)) / (leftN + rightN);
+          const gain = parentImpurity - wGini;
+          if (!bestForFeat || gain > bestForFeat.gain) {
+            bestForFeat = { feature: feat, type: 'numeric', threshold: (sorted[i].val + sorted[i+1].val) / 2, gain, nLeft: leftN, nRight: rightN };
+          }
+        }
+      }
+      if (bestForFeat) allSplits.push(bestForFeat);
+    } else {
+      const categories = [...new Set(rows.map(r => r[feat]).filter(v => v !== '' && v !== 'NA'))];
+      if (categories.length < 2) continue;
+      let bestForFeat = null;
+      for (const cat of categories) {
+        const lRows = rows.filter(r => r[feat] === cat);
+        const rRows = rows.filter(r => r[feat] !== cat && r[feat] !== '' && r[feat] !== 'NA');
+        if (lRows.length < minLeaf || rRows.length < minLeaf) continue;
+        const total = lRows.length + rRows.length;
+        let gain;
+        if (isReg) {
+          gain = parentImpurity - (lRows.length * regVariance(lRows, target) + rRows.length * regVariance(rRows, target)) / total;
+        } else {
+          const lc = countClasses(lRows, target), rc = countClasses(rRows, target);
+          gain = parentImpurity - (lRows.length * giniImpurity(lc, lRows.length) + rRows.length * giniImpurity(rc, rRows.length)) / total;
+        }
+        if (!bestForFeat || gain > bestForFeat.gain) {
+          bestForFeat = { feature: feat, type: 'categorical', category: cat, gain, nLeft: lRows.length, nRight: rRows.length };
+        }
+      }
+      if (bestForFeat) allSplits.push(bestForFeat);
+    }
+  }
+  return allSplits.sort((a, b) => b.gain - a.gain).slice(0, maxResults);
+}
+
+function resetTree() {
+  if (undoStack.length === 0) return;
+  const first = undoStack[0];
+  TREE = first.tree;
+  TREE._target = first._target;
+  TREE._features = first._features;
+  TREE._classes = first._classes;
+  TREE._rows = first._rows;
+  undoStack.length = 0;
+  selectedNodeId = null;
+  refreshAfterEdit();
+  showToast('⟲ Reset to original tree');
+}
+
+// ═══════════════════════════════════════
+//  RULES & EXPORT
+// ═══════════════════════════════════════
+function extractRules(node, conditions = []) {
+  if (node.leaf) return [{ conditions: [...conditions], prediction: node.prediction, confidence: node.confidence, n: node.n }];
+  const s = node.split;
+  const leftCond = s.type === 'numeric'
+    ? { feature: s.feature, op: '≤', value: s.threshold, type: 'numeric' }
+    : { feature: s.feature, op: '=', value: s.category, type: 'categorical' };
+  const rightCond = s.type === 'numeric'
+    ? { feature: s.feature, op: '>', value: s.threshold, type: 'numeric' }
+    : { feature: s.feature, op: '≠', value: s.category, type: 'categorical' };
+  return [...extractRules(node.left, [...conditions, leftCond]), ...extractRules(node.right, [...conditions, rightCond])];
+}
+
+function renderRules() {
+  if (!TREE) return;
+  const rules = extractRules(TREE);
+  const isReg = TREE_MODE === 'regression';
+  let html = '';
+  for (const r of rules) {
+    html += `<span class="rule-if">IF </span>`;
+    r.conditions.forEach((c, j) => {
+      if (j > 0) html += `<span class="rule-if"> AND </span>`;
+      html += `<span class="rule-feat">${c.feature}</span>`;
+      const valStr = c.type === 'numeric' ? (Number.isInteger(c.value) ? c.value : c.value.toFixed(3)) : `"${c.value}"`;
+      html += ` ${c.op} <span class="rule-val">${valStr}</span>`;
+    });
+    const pred = isReg ? Number(r.prediction).toFixed(3) : r.prediction;
+    const meta = isReg ? `σ=${(r.confidence??0).toFixed(2)}, n=${r.n}` : `${((r.confidence??0)*100).toFixed(0)}%, n=${r.n}`;
+    html += `\n  <span class="rule-if">THEN</span> <span class="rule-class">${pred}</span>`;
+    html += ` <span class="rule-meta">(${meta})</span>\n\n`;
+  }
+  document.getElementById('rulesBox').innerHTML = html;
+  document.getElementById('rulesSection').style.display = '';
+}
+
+function exportRules(format) {
+  if (!TREE) return;
+  const rules = extractRules(TREE);
+  const isReg = TREE_MODE === 'regression';
+  let text = '';
+  if (format === 'text') {
+    for (const r of rules) {
+      const conds = r.conditions.map(c => {
+        const v = c.type === 'numeric' ? (Number.isInteger(c.value) ? c.value : c.value.toFixed(3)) : `"${c.value}"`;
+        return `${c.feature} ${c.op} ${v}`;
+      }).join(' AND ');
+      const pred = isReg ? Number(r.prediction).toFixed(3) : r.prediction;
+      const meta = isReg ? `σ=${r.confidence.toFixed(2)}, n=${r.n}` : `${(r.confidence*100).toFixed(0)}%, n=${r.n}`;
+      text += `IF ${conds} THEN ${pred} (${meta})\n`;
+    }
+  } else if (format === 'python') {
+    text = `def predict(row):\n` + treeToIfElse(TREE, '    ');
+  } else if (format === 'excel') {
+    text = treeToExcel(TREE);
+  } else if (format === 'sql') {
+    text = treeToSQL(TREE);
+  }
+  navigator.clipboard.writeText(text).then(() => showToast(`${format} rules copied to clipboard`));
+}
+
+function treeToIfElse(node, indent) {
+  const isReg = TREE_MODE === 'regression';
+  if (node.leaf) {
+    const pred = isReg ? Number(node.prediction).toFixed(6) : `"${node.prediction}"`;
+    const comment = isReg ? `σ=${(node.confidence??0).toFixed(2)}, n=${node.n}` : `${((node.confidence??0)*100).toFixed(0)}%, n=${node.n}`;
+    return `${indent}return ${pred}  # ${comment}\n`;
+  }
+  const s = node.split;
+  const cond = s.type === 'numeric'
+    ? `row["${s.feature}"] <= ${Number.isInteger(s.threshold) ? s.threshold : s.threshold.toFixed(6)}`
+    : `row["${s.feature}"] == "${s.category}"`;
+  return `${indent}if ${cond}:\n` + treeToIfElse(node.left, indent + '    ')
+    + `${indent}else:\n` + treeToIfElse(node.right, indent + '    ');
+}
+
+function treeToExcel(node) {
+  const isReg = TREE_MODE === 'regression';
+  function gen(n) {
+    if (n.leaf) return isReg ? Number(n.prediction).toFixed(3) : `"${n.prediction}"`;
+    const s = n.split;
+    const cond = s.type === 'numeric'
+      ? `${s.feature}<=${Number.isInteger(s.threshold) ? s.threshold : s.threshold.toFixed(3)}`
+      : `${s.feature}="${s.category}"`;
+    return `IF(${cond},${gen(n.left)},${gen(n.right)})`;
+  }
+  return '=' + gen(node);
+}
+
+function treeToSQL(tree) {
+  const rules = extractRules(tree);
+  const isReg = TREE_MODE === 'regression';
+  const target = tree._target || 'prediction';
+  const sqlOp = op => ({ '≤': '<=', '≠': '<>', '=': '=', '>': '>' }[op] || op);
+  let sql = `-- Arborist CART ${isReg ? 'regression' : 'classification'} tree\n`;
+  sql += `-- Target: ${target} | Leaves: ${rules.length}\n`;
+  sql += `CASE\n`;
+  for (const r of rules) {
+    const conds = r.conditions.map(c => {
+      if (c.type === 'numeric') {
+        const v = Number.isInteger(c.value) ? c.value : c.value.toFixed(6);
+        return `${c.feature} ${sqlOp(c.op)} ${v}`;
+      } else {
+        return `${c.feature} ${sqlOp(c.op)} '${c.value}'`;
+      }
+    }).join('\n      AND ');
+    const pred = isReg ? Number(r.prediction).toFixed(3) : `'${r.prediction}'`;
+    sql += `  WHEN ${conds}\n    THEN ${pred}\n`;
+  }
+  sql += `  ELSE NULL\nEND AS ${target}_pred`;
+  return sql;
+}
+
+// ═══════════════════════════════════════
+//  HELP
+// ═══════════════════════════════════════
+function showHelp() {
+  document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
+  const overlay = document.createElement('div');
+  overlay.className = 'load-dialog-overlay';
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+  const dialog = document.createElement('div');
+  dialog.className = 'help-dialog';
+  dialog.innerHTML = `
+    <h3>🌳 Arborist — Guide</h3>
+    <div class="help-sub">Decision Tree Cultivator · v0.1</div>
+
+    <h4>Workflow</h4>
+    <div class="help-flow">
+      <span class="help-flow-step">Load Data</span>
+      <span class="help-flow-arrow">→</span>
+      <span class="help-flow-step">Configure</span>
+      <span class="help-flow-arrow">→</span>
+      <span class="help-flow-step">Grow Tree</span>
+      <span class="help-flow-arrow">→</span>
+      <span class="help-flow-step">Inspect</span>
+      <span class="help-flow-arrow">→</span>
+      <span class="help-flow-step">Reshape</span>
+      <span class="help-flow-arrow">→</span>
+      <span class="help-flow-step">Export</span>
+    </div>
+    <p>Load a CSV (or use an example dataset), pick a target column, set tree parameters, and hit <code>🌱 Grow Tree</code>.
+    Click nodes to inspect them, then use the bonsai tools to reshape the tree manually. Export the final rules.</p>
+
+    <h4>Classification vs Regression</h4>
+    <p>Arborist auto-detects the mode from your target column. Categorical targets (text values) trigger <strong>classification</strong> using Gini impurity. Numeric targets trigger <strong>regression</strong> using variance reduction. The stats bar shows Accuracy or R² accordingly.</p>
+
+    <h4>Column Types</h4>
+    <p>In the left panel data summary, each column shows <code>num #</code> or <code>cat ●</code>. Click the type badge on any originally-numeric column to force it to categorical — useful for zone IDs, litho codes, or drillhole numbers that look numeric but should be treated as categories.</p>
+
+    <h4>Tree Parameters</h4>
+    <ul>
+      <li><strong>Target</strong> — the column to predict. Categoricals are listed first.</li>
+      <li><strong>Max Depth</strong> — limits how deep the tree can grow. Deeper = more specific, risk of overfitting.</li>
+      <li><strong>Min Leaf</strong> — minimum samples required in a leaf. Larger = smoother, more conservative.</li>
+      <li><strong>Min Split</strong> — minimum samples required to attempt a split.</li>
+    </ul>
+
+    <h4>Inspector Panel</h4>
+    <p>Click any node to open the inspector. For classification, you see the class distribution bar and proportions. For regression, a histogram of values with mean (amber line) and ±σ range.</p>
+    <p>The panel also shows: impurity (Gini or Variance), sample count, prediction, confidence/std, and split details with child stats.</p>
+
+    <h4>Bonsai Tools (Manual Reshaping)</h4>
+    <p>Below the metrics you'll find bonsai actions for the selected node:</p>
+    <ul>
+      <li><strong>✂ Prune to Leaf</strong> — collapse a split node into a leaf, removing all children.</li>
+      <li><strong>🌿 Regrow from Leaf</strong> — let CART find the best split for a leaf, expanding it.</li>
+      <li><strong>⚡ Force Split</strong> — manually split a leaf on any feature/threshold you choose. The Gini/Variance chart helps you pick optimal thresholds visually (click the chart to set a value).</li>
+    </ul>
+    <p>The <strong>Top Splits</strong> section shows the 6 best data-driven splits for the selected node, ranked by Gini gain or variance reduction. Click any to apply it.</p>
+    <p>All edits are tracked with an undo stack (max 30). Use <kbd>↩ Undo</kbd> to step back or <kbd>⟲ Reset</kbd> to restore the original tree.</p>
+
+    <h4>Exporting Rules</h4>
+    <ul>
+      <li><code>📋 Rules</code> — human-readable IF/AND/THEN pseudocode.</li>
+      <li><code>🐍 Python</code> — nested if/else function, paste into a script.</li>
+      <li><code>📊 Excel IF</code> — nested IF() formula for spreadsheets.</li>
+      <li><code>🗄 SQL CASE</code> — CASE WHEN block for block model queries (Vulcan, Surpac, Datamine).</li>
+      <li><code>📁 CSV</code> — downloads predictions for every row with predicted class/value, confidence, and leaf ID.</li>
+    </ul>
+
+    <h4>Importing SQL Rules</h4>
+    <p>Use <code>📥 Import SQL</code> to paste a CASE WHEN block from Minitab, legacy block models, or any SQL source. Arborist parses the conditions and reconstructs a binary tree. If data is loaded, it evaluates accuracy immediately — you can then use bonsai tools to refine the imported rules.</p>
+
+    <h4>Projects (Save / Load)</h4>
+    <p>Projects are stored in the browser's IndexedDB (no size limit). Use the left panel buttons:</p>
+    <ul>
+      <li><code>💾 Save</code> / <code>📂 Open</code> — persist to browser storage.</li>
+      <li><code>📤 Export</code> / <code>📥 Import</code> — download/upload as JSON files to share between machines.</li>
+    </ul>
+    <p>Projects store: CSV data, tree structure, configuration, column type overrides, and tree mode.</p>
+
+    <h4>Navigation</h4>
+    <ul>
+      <li><strong>Pan</strong> — click and drag on the tree canvas.</li>
+      <li><strong>Zoom</strong> — mouse wheel, or use the +/− buttons.</li>
+      <li><strong>Fit</strong> — auto-zoom to show the entire tree.</li>
+      <li><strong>Deselect</strong> — click empty canvas area.</li>
+    </ul>
+
+    <h4>About</h4>
+    <p>Arborist is a browser-based CART (Classification and Regression Trees) implementation with an interactive "bonsai" workflow for expert-guided tree reshaping. It is written in vanilla JavaScript with zero dependencies — no frameworks, no build tools, no server required. The entire application runs client-side in a single HTML file.</p>
+    <p>The bonsai workflow allows post-hoc integration of domain knowledge into data-driven trees — particularly useful in geometallurgical domaining and resource estimation, where statistical optima don't always align with geological reality and regulatory frameworks (JORC, NI 43-101) require transparent, justifiable domain boundaries.</p>
+
+    <h4>References</h4>
+    <p style="font-size:0.62rem; color:var(--text-faint); line-height:1.7;">
+      Breiman, L., Friedman, J.H., Olshen, R.A. and Stone, C.J. (1984). <em>Classification and Regression Trees</em>. Wadsworth & Brooks/Cole, Monterey, CA. ISBN 978-0-412-04841-8.
+      <br><br>
+      The CART algorithm — greedy binary recursive partitioning using Gini impurity for classification and variance reduction for regression — follows the original formulation in Breiman et al. (1984). The incremental sweep implementation for finding optimal numeric thresholds is inspired by the approach used in scikit-learn's <code>DecisionTreeClassifier</code> (Pedregosa et al., 2011).
+      <br><br>
+      Pedregosa, F. et al. (2011). Scikit-learn: Machine Learning in Python. <em>Journal of Machine Learning Research</em>, 12, pp. 2825–2830.
+    </p>
+    <p style="color:var(--text-faint); font-size:0.58rem; margin-top:0.6rem;">Arborist v0.1.0 · Geoscientific Chaos Union · © 2026 Arthur Endlein · MIT License</p>
+
+    <button class="help-close" onclick="this.closest('.load-dialog-overlay').remove()">Close</button>
+  `;
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+}
+
+// ═══════════════════════════════════════
+//  GUIDED WORKSHOP
+// ═══════════════════════════════════════
+let workshopStep = 0;
+let workshopActive = false;
+
+const WORKSHOP_STEPS = [
+  {
+    title: 'Welcome',
+    desc: `Welcome to the Arborist guided workshop.
+<br><br>
+This interactive guide will walk you through the complete workflow for building, interpreting, reshaping, and exporting <strong>decision trees</strong> — one of the most powerful and interpretable tools in applied geoscience and data analysis.
+<br><br>
+<strong>What is a decision tree?</strong> A decision tree is a flowchart-like model that splits data into progressively more homogeneous groups by asking a sequence of yes/no questions about the input features. Each internal node tests a condition (e.g. "Is Fe &gt; 58%?"), each branch represents the outcome, and each leaf node gives a prediction — either a class label (classification) or a numeric value (regression).
+<br><br>
+<strong>Why are they useful?</strong> Unlike black-box models (neural networks, random forests), a single decision tree produces <em>transparent, auditable rules</em> that can be written as SQL, applied in spreadsheets, or communicated in a report. In geometallurgy and resource estimation, this transparency is essential — regulatory frameworks like JORC and NI 43-101 require that domain boundaries be justifiable and documented.
+<br><br>
+<strong>What is CART?</strong> Arborist implements the CART algorithm (Classification and Regression Trees) introduced by Breiman, Friedman, Olshen and Stone in 1984. CART grows binary trees by exhaustively searching all features and thresholds for the split that maximally reduces impurity — measured by <strong>Gini impurity</strong> for classification or <strong>variance</strong> for regression.
+<br><br>
+Each step in this workshop has <span style="color:var(--green-bright)">green action buttons</span> that drive the real interface. Click them to load data, select nodes, and apply operations as you follow along. Use <strong>Next ▶</strong> to advance.`,
+    actions: [],
+  },
+  {
+    title: '1 — Load Data',
+    desc: `Every tree starts with data. Arborist accepts <strong>CSV files</strong> with a header row, or you can use one of the built-in example datasets.
+<br><br>
+Let's load the <strong>Iron Ore Domains</strong> dataset. This is a synthetic but realistic geometallurgical dataset with 200 samples containing:
+<br><br>
+• <code>Fe_pct</code> — iron grade (%)
+<br>• <code>SiO2_pct</code> — silica content (%)
+<br>• <code>Al2O3_pct</code> — alumina content (%)
+<br>• <code>depth_m</code> — depth below surface (m)
+<br>• <code>weathering</code> — weathering state (fresh / oxide)
+<br>• <code>domain</code> — the target: ore type classification
+<br><br>
+The goal is to build a tree that predicts the <strong>domain</strong> from the other features. In real projects, these domains would define processing routes — different crusher settings, flotation circuits, or heap leach vs. mill feed decisions.
+<br><br>
+Click below to load the data. Arborist will auto-detect column types (numeric vs categorical), populate the configuration panel, set sensible defaults, and grow an initial tree.`,
+    actions: [{ label: '⛏ Load Iron Ore & Grow', fn: () => { loadExample('ironore'); setTimeout(zoomFit, 60); } }],
+  },
+  {
+    title: '2 — Reading the Tree',
+    desc: `The tree visualization reads <strong>top to bottom</strong>. Let's break down what you see:
+<br><br>
+<strong>Split nodes</strong> (rectangles) contain:
+<br>• A condition like <code>Fe_pct ≤ 58.0</code>
+<br>• A color bar showing class proportions at that node
+<br>• The sample count (<code>n=...</code>)
+<br>• Left child = condition is TRUE, Right child = FALSE
+<br><br>
+<strong>Leaf nodes</strong> (with 🍂) contain:
+<br>• The predicted class (majority vote)
+<br>• The confidence (proportion of the majority class)
+<br>• The sample count
+<br><br>
+<strong>The root node</strong> (topmost) contains all samples. At each level, the data is partitioned. By the time you reach a leaf, you have a (hopefully) homogeneous subset dominated by one class.
+<br><br>
+<strong>Reading a path:</strong> To understand a prediction, trace from the root to a leaf, collecting conditions along the way. For example: "Fe ≤ 58 AND weathering = fresh → BIF" means that low-iron, fresh (unweathered) rock is classified as banded iron formation.
+<br><br>
+The <strong>stats bar</strong> in the left panel summarizes: total rows, node/leaf counts, tree depth, and overall accuracy. Accuracy is the percentage of training samples correctly classified. (For regression, this becomes R².)
+<br><br>
+Click Fit View to center the tree if needed.`,
+    actions: [{ label: 'Fit View', fn: () => zoomFit() }],
+  },
+  {
+    title: '3 — The Inspector',
+    desc: `The <strong>Inspector panel</strong> on the right side reveals detailed statistics for any node you click. It's the analytical heart of Arborist.
+<br><br>
+Let's select the root node to see the full dataset statistics.
+<br><br>
+<strong>What you'll see:</strong>
+<br><br>
+<strong>Class Distribution</strong> — a horizontal stacked bar chart showing the proportion of each class at this node, with a color legend and exact counts. At the root, this is the full dataset's class balance.
+<br><br>
+<strong>Metrics Section:</strong>
+<br>• <strong>Gini Impurity</strong> — measures how "mixed" the node is. Ranges from 0 (perfectly pure: all one class) to ≈0.5 (maximally mixed). Formally: Gini = 1 − Σpᵢ² where pᵢ is the proportion of class i. A Gini of 0.65 means the node is very heterogeneous; a Gini of 0.05 means it's nearly pure.
+<br>• <strong>Samples</strong> — how many data points reach this node.
+<br>• <strong>Prediction</strong> — the majority class.
+<br>• <strong>Confidence</strong> — proportion of the majority class (higher = more certain).
+<br><br>
+<strong>Split Details</strong> (for non-leaf nodes):
+<br>Shows the feature and threshold used, plus Gini and sample count for each child. The <strong>gain</strong> is the reduction in impurity achieved by this split — higher gain = more informative split.
+<br><br>
+Try clicking around the tree after this to see how statistics change at different nodes.`,
+    actions: [{ label: '🔍 Select Root Node', fn: () => { if (TREE) { selectNodeById(TREE.id); openInspector(); } } }],
+  },
+  {
+    title: '4 — Purity & Leaves',
+    desc: `Now let's look at a <strong>leaf node</strong> — the endpoints where predictions are made.
+<br><br>
+A well-grown tree produces leaves that are much purer than their parent nodes. The class distribution bar should be dominated by a single color, and the Gini impurity should be low (close to 0).
+<br><br>
+<strong>Why purity matters:</strong> In geometallurgy, each leaf defines a <em>processing domain</em>. If a leaf is 95% "HG_oxide", you can confidently route that material to the oxide processing circuit. But if it's only 60% one class, there's significant misclassification risk — some material will be sent to the wrong circuit, causing recovery losses or contamination.
+<br><br>
+<strong>The confidence value</strong> shown on each leaf is exactly this purity measure: the fraction of samples belonging to the predicted class. In practice:
+<br>• <strong>&gt;90%</strong> — high confidence, reliable domain
+<br>• <strong>70-90%</strong> — moderate, may need refinement
+<br>• <strong>&lt;70%</strong> — the tree is uncertain here; consider further splitting or expert review
+<br><br>
+<strong>Sample count</strong> is equally important. A leaf with 95% purity but only 3 samples is statistically unreliable — it might just be noise. The <code>Min Leaf</code> parameter controls this: it prevents the tree from creating leaves with too few samples. In geostatistics, we'd call this ensuring domain stationarity requires sufficient data.
+<br><br>
+Click below to select a leaf and examine its purity.`,
+    actions: [{ label: '🍂 Select a Leaf', fn: () => { if (TREE) { const leaf = findFirstLeaf(TREE); if (leaf) { selectNodeById(leaf.id); openInspector(); } } } }],
+  },
+  {
+    title: '5 — Bonsai: Pruning',
+    desc: `This is where Arborist differs from standard CART tools. The <strong>bonsai workflow</strong> lets you manually reshape the tree after growing it, integrating domain knowledge with data-driven optimization.
+<br><br>
+<strong>Pruning</strong> means collapsing a subtree into a single leaf. The children are removed, and the node becomes a leaf with the majority-vote prediction of all samples that reach it.
+<br><br>
+<strong>When to prune:</strong>
+<br>• A split separates samples that should be in the same domain (e.g. splitting oxide ore on an irrelevant feature)
+<br>• The accuracy gain from a split is negligible
+<br>• The split creates leaves with too few samples for practical use
+<br>• You're simplifying for operational clarity — a 5-leaf tree is easier to implement in a processing plant than a 15-leaf tree
+<br><br>
+<strong>Accuracy feedback:</strong> When you prune, the stats bar immediately updates the accuracy. This tells you the cost of simplification. Often, pruning several nodes only drops accuracy by 1-2% while dramatically simplifying the model.
+<br><br>
+Let's try it. First we'll select a split node (one whose children are both leaves), then prune it. Watch the accuracy change.`,
+    actions: [{ label: '🔍 Select a Split Node', fn: () => { if (TREE) { const sn = findFirstSplit(TREE); if (sn) { selectNodeById(sn.id); openInspector(); } } } },
+              { label: '✂ Prune It', fn: () => { if (selectedNodeId !== null) pruneToLeaf(selectedNodeId); } }],
+  },
+  {
+    title: '6 — Undo & History',
+    desc: `Every bonsai edit is recorded on an <strong>undo stack</strong> (up to 30 operations deep). This is critical for experimentation — you can freely try pruning, regrowing, and forcing splits without fear of losing your work.
+<br><br>
+The undo bar at the top of the inspector shows:
+<br>• <strong>Edit count</strong> — how many modifications you've made
+<br>• <strong>↩ Undo</strong> — reverts the last operation
+<br>• <strong>⟲ Reset</strong> — restores the original auto-grown tree completely
+<br><br>
+<strong>Practical workflow:</strong> A common pattern is to grow an initial tree, then iteratively prune and resplit until the tree reflects both the statistics and your geological understanding. If an experiment doesn't improve things, undo and try a different approach. The real-time accuracy feedback makes each decision immediately quantifiable.
+<br><br>
+Let's undo the prune we just did to restore the previous tree state.`,
+    actions: [{ label: '↩ Undo Last Edit', fn: () => undoEdit() }],
+  },
+  {
+    title: '7 — Top Splits',
+    desc: `When you select a <strong>leaf node</strong>, the inspector's <strong>Top Splits by Gini</strong> section (scroll down in the inspector) shows the 6 best possible splits for that node, ranked by information gain.
+<br><br>
+<strong>How splits are evaluated:</strong> For each feature, CART tests every possible threshold (for numeric features) or category (for categorical features), computing the weighted impurity of the resulting children. The split that maximizes the <em>gain</em> — the difference between parent impurity and the weighted average of child impurities — wins.
+<br><br>
+<strong>The top splits table shows:</strong>
+<br>• <strong>Feature</strong> and threshold/category
+<br>• <strong>Gain</strong> — impurity reduction (higher = more informative)
+<br>• <strong>Left/Right</strong> — sample counts for each child
+<br><br>
+<strong>Click any row</strong> in the top splits table to apply that split, expanding the leaf into a split node with two children. This is a quick way to let the data guide your next refinement.
+<br><br>
+<strong>Geological interpretation:</strong> Look at which features appear in the top splits. If Fe and SiO₂ dominate, the tree is finding geochemical boundaries. If depth appears, it may be picking up a supergene enrichment profile. If weathering appears, the tree is separating oxide from primary material. These patterns should align with your geological model — if they don't, it may indicate data issues or unexpected geological complexity.
+<br><br>
+Select a leaf below and examine the suggested splits in the inspector.`,
+    actions: [{ label: '🍂 Select a Leaf', fn: () => { if (TREE) { const leaf = findFirstLeaf(TREE); if (leaf) { selectNodeById(leaf.id); openInspector(); } } } }],
+  },
+  {
+    title: '8 — Force Split',
+    desc: `<strong>Force Split</strong> is the most powerful bonsai tool. It lets you split a leaf on <em>any feature at any threshold you choose</em>, overriding the data-driven optimization.
+<br><br>
+<strong>To use it:</strong>
+<br>1. Select a leaf node
+<br>2. Click <strong>⚡ Force Split</strong> in the inspector
+<br>3. Choose a feature from the dropdown
+<br>4. An interactive <strong>Gini/Variance chart</strong> appears showing impurity across all possible thresholds
+<br>5. <strong>Click on the chart</strong> to place your threshold
+<br>6. Click <strong>Apply Custom Split</strong>
+<br><br>
+<strong>The interactive chart</strong> is key: it shows weighted impurity (y-axis) vs. threshold (x-axis). Valleys in the curve represent good split points. The green dashed line marks your current selection. You can see exactly the trade-off before committing.
+<br><br>
+<strong>When to force-split:</strong>
+<br>• You know a geological contact exists at a specific depth (e.g. base of weathering at 45m)
+<br>• You want to enforce a grade cutoff used by the processing plant (e.g. Fe = 58%)
+<br>• The automatic split chose a threshold that doesn't align with geological boundaries
+<br>• You need to separate domains by a feature the algorithm didn't prioritize
+<br><br>
+<strong>The philosophical point:</strong> In geostatistics and geometallurgy, purely data-driven boundaries often don't respect geological reality. A statistical boundary at Fe = 57.3% might actually correspond to a known geological contact that occurs at Fe ≈ 58% in the grade-tonnage curve. Force-splitting lets you encode this knowledge while still getting accuracy feedback from the data.
+<br><br>
+Try it now: select a leaf, open Force Split, and experiment with the chart.`,
+    actions: [{ label: '🍂 Select a Leaf', fn: () => { if (TREE) { const leaf = findFirstLeaf(TREE); if (leaf) { selectNodeById(leaf.id); openInspector(); } } } }],
+  },
+  {
+    title: '9 — Column Types',
+    desc: `Arborist auto-detects whether each column is <strong>numeric</strong> (<code>num #</code>) or <strong>categorical</strong> (<code>cat ●</code>) based on whether the values parse as numbers. But this heuristic isn't always right.
+<br><br>
+<strong>The problem:</strong> Many geoscience datasets contain coded variables — columns that look numeric but represent categories:
+<br>• Lithology codes: 1=granite, 2=schist, 3=gneiss
+<br>• Zone IDs: 100, 200, 300
+<br>• Drillhole numbers: DH001 → might parse as numeric 1
+<br>• Boolean flags: 0/1 for yes/no
+<br><br>
+If a coded column is treated as numeric, the tree will generate splits like <code>litho_code ≤ 1.5</code>, which is technically valid but geologically meaningless — it means "granite vs everything else" rather than testing each lithology properly. As a categorical column, the tree would generate splits like <code>litho_code = granite</code>, which is correct.
+<br><br>
+<strong>How to toggle:</strong> In the left panel <strong>Data</strong> section, look at the column list. Each column has a type badge: <code>num #</code> or <code>cat ●</code>. For originally-numeric columns, <strong>click the badge</strong> to toggle between numeric and categorical. It highlights on hover to show it's clickable.
+<br><br>
+After toggling, the target dropdown updates to reflect the new types. You can regrow the tree with the corrected types.
+<br><br>
+<strong>When in doubt:</strong> If a numeric column has fewer than ~10 unique values, it's probably categorical. If it has continuous values with many decimals, it's truly numeric.`,
+    actions: [],
+  },
+  {
+    title: '10 — Regression',
+    desc: `So far we've been doing <strong>classification</strong> — predicting a categorical target. But Arborist also supports <strong>regression trees</strong> for predicting continuous numeric values.
+<br><br>
+<strong>The difference:</strong>
+<br>• <strong>Classification:</strong> Gini impurity, accuracy metric, class predictions
+<br>• <strong>Regression:</strong> Variance reduction, R² metric, mean ± σ predictions
+<br><br>
+Mode is auto-detected from the target column type. If you select a numeric target, Arborist switches to regression automatically.
+<br><br>
+<strong>How regression trees work:</strong> Instead of finding splits that separate classes, the algorithm finds splits that reduce the <em>variance</em> of the target within each child. Each leaf predicts the <strong>mean value</strong> of its samples. The quality metric is R² = 1 − SS<sub>res</sub>/SS<sub>tot</sub>, where values close to 1.0 mean the tree explains most of the variance.
+<br><br>
+<strong>Visual differences:</strong>
+<br>• Leaf nodes show the predicted mean and standard deviation: <code>🍂 23.45 σ=4.12</code>
+<br>• Node bars show a range indicator: grey = global target range, cyan = ±1σ around the node mean, amber line = mean
+<br>• Inspector shows a histogram of target values instead of a class distribution bar
+<br><br>
+<strong>Geological use case:</strong> Regression trees are excellent for predicting grade (Fe%, Cu%, Au g/t) from other features. The resulting tree gives interpretable rules like "If depth &gt; 50m AND SiO₂ &lt; 4% THEN predicted Fe = 63.2%". This is essentially what geostatisticians do manually when building estimation domains — the tree automates the boundary search.
+<br><br>
+Click below to switch the target to <code>Fe_pct</code> and see regression mode in action.`,
+    actions: [{ label: '# Switch to Fe_pct Regression', fn: () => {
+      document.getElementById('targetSelect').value = 'Fe_pct';
+      growTree(); setTimeout(zoomFit, 60);
+    } }],
+  },
+  {
+    title: '11 — Export Formats',
+    desc: `The final goal is to get your tree <em>out</em> of Arborist and into production. The <strong>Export</strong> section (in the inspector, below Decision Rules) provides five formats:
+<br><br>
+<strong>📋 Rules</strong> — Human-readable pseudocode:
+<br><code>IF Fe ≤ 58 AND weathering = "fresh" THEN BIF</code>
+<br>Perfect for reports, documentation, and communication with non-technical stakeholders. This is what goes in your JORC Table 1 or NI 43-101 technical report.
+<br><br>
+<strong>🐍 Python</strong> — A nested <code>if/else</code> function:
+<br>Paste into any Python script. Useful for batch processing, integration with geostatistical workflows, or embedding in Leapfrog/OMF toolchains.
+<br><br>
+<strong>📊 Excel IF()</strong> — A nested <code>=IF()</code> formula:
+<br>Paste into a spreadsheet cell. Immediately classifies rows based on their feature values. Great for quick checks and auditing. Can get deeply nested for large trees.
+<br><br>
+<strong>🗄 SQL CASE</strong> — A <code>CASE WHEN</code> block:
+<br>The most critical format for mining. This plugs directly into block model software (Vulcan, Surpac, Datamine, Deswik) as a field calculation or SQL query. Each WHEN clause defines one leaf's path from root to prediction.
+<br><br>
+<strong>📁 CSV</strong> — Downloads the full dataset with predictions appended:
+<br>Each row gets: predicted class/value, confidence/std, and leaf ID. The leaf ID lets you cross-reference back to the tree for auditing.
+<br><br>
+All exports are <strong>regression-aware</strong> — numeric predictions for regression, class labels for classification. Try copying the SQL version.`,
+    actions: [{ label: '🗄 Copy SQL CASE', fn: () => exportRules('sql') }],
+  },
+  {
+    title: '12 — Import SQL',
+    desc: `Arborist can also go the <strong>other direction</strong> — import existing rules as a tree structure.
+<br><br>
+<strong>The use case:</strong> A geologist has domain rules in SQL from a previous study (maybe from Minitab, a legacy block model, or hand-coded by a consultant). They want to:
+<br>1. Visualize the rules as a tree
+<br>2. Evaluate them against new data
+<br>3. Refine them with bonsai tools
+<br>4. Re-export the improved version
+<br><br>
+<strong>How it works:</strong> Paste a <code>CASE WHEN</code> block into the import dialog. Arborist parses the conditions, reconstructs a binary tree by finding shared condition prefixes, and displays it. If data is loaded, every node gets real statistics — you immediately see accuracy, class distributions, and impurities.
+<br><br>
+<strong>Supported syntax:</strong>
+<br>• <code>feature &lt;= 58.5</code> (numeric comparison)
+<br>• <code>feature &gt; 10</code> (numeric comparison)
+<br>• <code>feature = 'oxide'</code> (categorical match)
+<br>• <code>feature &lt;&gt; 'fresh'</code> (categorical not-equal)
+<br>• Multiple conditions joined with <code>AND</code>
+<br>• <code>ELSE</code> clause (optional)
+<br>• SQL comments (<code>--</code>) are stripped
+<br><br>
+<strong>The round-trip:</strong> Import SQL → load data → see accuracy → reshape with bonsai → export updated SQL. This is particularly powerful for auditing and improving existing domain models that may have been built years ago with different data.
+<br><br>
+Click below to open the import dialog and try pasting a CASE WHEN block.`,
+    actions: [{ label: '📥 Open Import Dialog', fn: () => showSQLImportDialog() }],
+  },
+  {
+    title: '13 — Projects',
+    desc: `Arborist stores projects in the browser's <strong>IndexedDB</strong>, which has effectively no size limit — you can save datasets with hundreds of thousands of rows without issue.
+<br><br>
+<strong>The Projects section</strong> in the left panel provides four operations:
+<br><br>
+<strong>💾 Save</strong> — stores everything to IndexedDB: the CSV data, tree structure, configuration (target, max depth, min leaf, min split), column type overrides, and tree mode. Projects are named and timestamped. You can overwrite existing projects by saving with the same name.
+<br><br>
+<strong>📂 Open</strong> — opens a dialog listing all saved projects with name, date, mode, row count, and edit count. Click to load; click ✕ to delete (with confirmation).
+<br><br>
+<strong>📤 Export</strong> — downloads the project as a <code>.json</code> file. This is the way to transfer projects between browsers, machines, or colleagues. The file contains everything needed to fully reconstruct the state.
+<br><br>
+<strong>📥 Import</strong> — uploads a <code>.json</code> file previously exported. Restores the full project including data, tree, config, and types.
+<br><br>
+<strong>Saved projects on the splash:</strong> When you first open Arborist, the splash screen shows your most recent saved projects for quick access.
+<br><br>
+<strong>Data safety note:</strong> IndexedDB is browser-local storage. Clearing browser data will delete your projects. For important work, always use <strong>📤 Export</strong> to keep a copy as a JSON file. The files are self-contained and can be version-controlled (e.g. in git alongside your geological model files).`,
+    actions: [],
+  },
+  {
+    title: '14 — Tree Parameters',
+    desc: `Let's circle back to the <strong>Configuration</strong> section and understand the parameters that control tree growth:
+<br><br>
+<strong>Max Depth</strong> (default: 5)
+<br>The maximum number of splits from root to any leaf. A depth of 1 gives a single split (a "stump"); depth 5 gives up to 32 leaves; depth 10 gives up to 1024 leaves. Deeper trees fit the training data more closely but risk <strong>overfitting</strong> — memorizing noise rather than capturing real patterns.
+<br>• <em>Practical guidance:</em> For geomet domaining, 3–6 is usually enough. Domain boundaries shouldn't require 10 levels of conditions to define.
+<br><br>
+<strong>Min Leaf</strong> (default: 5)
+<br>The minimum number of samples allowed in a leaf. This is your <strong>statistical support</strong> constraint. A leaf with only 2 samples might have 100% purity but is meaningless — it could be noise.
+<br>• <em>Practical guidance:</em> In resource estimation, each domain needs enough data for variogram modeling — typically 30+ samples for 3D variography. For initial domaining, min leaf of 5–10 is a reasonable starting point.
+<br><br>
+<strong>Min Split</strong> (default: 10)
+<br>The minimum number of samples required at a node before it can be split. If a node has fewer than this, it becomes a leaf regardless of whether a good split exists.
+<br>• <em>Practical guidance:</em> Set this to roughly 2× Min Leaf to ensure both children have enough data.
+<br><br>
+<strong>The trade-off:</strong> Smaller values → deeper, more complex trees with higher training accuracy but higher overfitting risk. Larger values → simpler, more robust trees with lower training accuracy but better generalization. The bonsai workflow lets you start complex and prune back, or start simple and selectively expand.`,
+    actions: [],
+  },
+  {
+    title: '15 — Gini Impurity',
+    desc: `Let's go deeper on the mathematics. <strong>Gini impurity</strong> is the splitting criterion for classification trees.
+<br><br>
+<strong>Formula:</strong>
+<br><code>Gini(node) = 1 − Σ pᵢ²</code>
+<br>where pᵢ is the proportion of class i at the node.
+<br><br>
+<strong>Intuition:</strong> If you randomly picked two samples from the node, Gini is the probability they'd be different classes. 
+<br>• A node with all one class: Gini = 0 (pure)
+<br>• A node with 2 classes at 50/50: Gini = 0.5 (maximum impurity for 2 classes)
+<br>• A node with 4 classes at 25% each: Gini = 0.75
+<br><br>
+<strong>How splits are chosen:</strong> For each possible split, we compute:
+<br><code>Gain = Gini(parent) − [nₗ·Gini(left) + nᵣ·Gini(right)] / (nₗ+nᵣ)</code>
+<br>The split that maximizes gain wins. This means the algorithm finds the threshold that most cleanly separates classes.
+<br><br>
+<strong>For numeric features:</strong> All data is sorted by the feature value. The algorithm sweeps from left to right, computing Gini incrementally at each potential threshold. This gives O(n·log n) complexity per feature. For a feature with values [3, 5, 8, 12], it tests thresholds at 4, 6.5, and 10 (midpoints between consecutive unique values).
+<br><br>
+<strong>For categorical features:</strong> Each unique category is tested as a binary split: "Is this category?" vs. "Is it not?". The category that gives the best Gini gain is chosen.
+<br><br>
+<strong>Gini vs. Entropy:</strong> Some implementations (like ID3/C4.5) use information entropy instead of Gini. In practice, they produce very similar trees. Gini is slightly faster to compute and is the standard for CART.`,
+    actions: [],
+  },
+  {
+    title: '16 — Variance & R²',
+    desc: `For <strong>regression trees</strong>, the splitting criterion switches from Gini to <strong>variance reduction</strong>.
+<br><br>
+<strong>Node variance:</strong>
+<br><code>Var(node) = (1/n) · Σ(yᵢ − ȳ)²</code>
+<br>where ȳ is the mean target value at the node. This is simply the mean squared error (MSE) from predicting the mean.
+<br><br>
+<strong>Split evaluation:</strong>
+<br><code>Gain = Var(parent) − [nₗ·Var(left) + nᵣ·Var(right)] / (nₗ+nᵣ)</code>
+<br>Same structure as Gini gain, but measuring variance instead of impurity. The best split creates children with the most internally homogeneous target values.
+<br><br>
+<strong>Leaf predictions:</strong> Each leaf predicts the <strong>mean</strong> of its samples, with standard deviation as the uncertainty measure. This is a piecewise-constant approximation to the true relationship.
+<br><br>
+<strong>R² (coefficient of determination):</strong>
+<br><code>R² = 1 − SS_res / SS_tot</code>
+<br>where SS_res = Σ(yᵢ − ŷᵢ)² (prediction errors) and SS_tot = Σ(yᵢ − ȳ)² (total variance). R² = 1 means perfect prediction; R² = 0 means the tree is no better than predicting the global mean.
+<br><br>
+<strong>Practical reading:</strong>
+<br>• R² &gt; 0.85 — excellent, the tree captures most of the grade variability
+<br>• R² 0.6–0.85 — good, useful for domaining but not for final estimation
+<br>• R² &lt; 0.6 — the features don't explain much variance; consider different inputs
+<br><br>
+<strong>Connection to geostatistics:</strong> Regression tree domains are essentially estimation domains where each leaf defines a zone with its own local mean and variance. This is the same concept as stationary domains in variogram modeling — the tree just finds the boundaries automatically.`,
+    actions: [],
+  },
+  {
+    title: 'Workshop Complete 🎉',
+    desc: `You've completed the full Arborist workshop. Here's a summary of the key concepts:
+<br><br>
+<strong>Core workflow:</strong> Load CSV → Configure → Grow → Inspect → Reshape → Export
+<br><br>
+<strong>The bonsai philosophy:</strong> Start with a data-driven tree, then refine it with domain knowledge. The algorithm finds optimal statistical boundaries; you adjust them to match geological reality. Real-time accuracy feedback quantifies every decision.
+<br><br>
+<strong>Key tools:</strong>
+<br>• <strong>Prune</strong> — simplify by collapsing subtrees
+<br>• <strong>Regrow</strong> — let CART expand a leaf
+<br>• <strong>Force Split</strong> — manually place expert-driven boundaries
+<br>• <strong>Top Splits</strong> — data-ranked alternatives for quick refinement
+<br>• <strong>Column Types</strong> — force numeric codes to categorical
+<br>• <strong>SQL round-trip</strong> — import/export for block model integration
+<br><br>
+<strong>When to use Arborist:</strong>
+<br>• Geometallurgical domain definition
+<br>• Grade estimation domain boundaries
+<br>• Ore/waste classification rules
+<br>• Auditing and improving legacy domain models
+<br>• Communicating domain logic to non-specialists
+<br>• Any situation where you need transparent, justifiable classification or regression rules
+<br><br>
+<strong>Reference:</strong>
+<br>Breiman, L., Friedman, J.H., Olshen, R.A. and Stone, C.J. (1984). <em>Classification and Regression Trees</em>. Wadsworth & Brooks/Cole, Monterey, CA. ISBN 978-0-412-04841-8.
+<br><br>
+<em style="color:var(--text-faint);">© 2026 Arthur Endlein · MIT License · Geoscientific Chaos Union</em>`,
+    actions: [{ label: '⛏ Reload Iron Ore Classification', fn: () => { loadExample('ironore'); setTimeout(zoomFit, 60); } }],
+  },
+];
+
+function findFirstLeaf(node) {
+  if (node.leaf) return node;
+  const l = findFirstLeaf(node.left);
+  if (l) return l;
+  return findFirstLeaf(node.right);
+}
+
+function findFirstSplit(node) {
+  if (node.leaf) return null;
+  // Find a split whose children are both leaves (simplest case)
+  if (node.left?.leaf && node.right?.leaf) return node;
+  const l = findFirstSplit(node.left);
+  if (l) return l;
+  return findFirstSplit(node.right);
+}
+
+function selectNodeById(id) {
+  selectedNodeId = id;
+  renderTree();
+  renderInspector(id);
+}
+
+function openInspector() {
+  const panel = document.getElementById('panelRight');
+  if (panel) panel.style.transform = 'translateX(0)';
+  const toggle = document.getElementById('panelToggle');
+  if (toggle) toggle.textContent = '▶ Inspector';
+}
+
+function startWorkshop() {
+  workshopStep = 0;
+  workshopActive = true;
+  renderWorkshopCol();
+}
+
+function endWorkshop() {
+  workshopActive = false;
+  const col = document.getElementById('workshopCol');
+  if (col) col.remove();
+}
+
+function renderWorkshopCol() {
+  let col = document.getElementById('workshopCol');
+  if (!col) {
+    col = document.createElement('div');
+    col.className = 'workshop-col';
+    col.id = 'workshopCol';
+    const app = document.querySelector('.app');
+    app.insertBefore(col, app.firstChild);
+  }
+
+  const step = WORKSHOP_STEPS[workshopStep];
+  const total = WORKSHOP_STEPS.length;
+  const isFirst = workshopStep === 0;
+  const isLast = workshopStep === total - 1;
+  const pct = ((workshopStep + 1) / total * 100).toFixed(0);
+
+  let actionsHtml = '';
+  if (step.actions.length > 0) {
+    actionsHtml = '<div class="ws-actions">' +
+      step.actions.map((a, i) => `<button class="ws-action-btn" onclick="workshopAction(${i})">${a.label}</button>`).join('') +
+      '</div>';
+  }
+
+  col.innerHTML = `
+    <div class="ws-header">
+      <span class="ws-header-title">📖 Workshop</span>
+      <button class="ws-close-btn" onclick="endWorkshop()" title="Exit workshop">✕</button>
+    </div>
+    <div class="ws-body">
+      <div class="ws-step-indicator">STEP ${workshopStep + 1} OF ${total}</div>
+      <div class="ws-progress"><div class="ws-progress-fill" style="width:${pct}%"></div></div>
+      <div class="ws-title">${step.title}</div>
+      <div class="ws-desc">${step.desc}</div>
+      ${actionsHtml}
+    </div>
+    <div class="ws-footer">
+      <button class="ws-nav-btn" onclick="workshopPrev()" ${isFirst ? 'disabled' : ''}>◀ Prev</button>
+      <button class="ws-nav-btn ws-next" onclick="workshopNext()">${isLast ? '✓ Done' : 'Next ▶'}</button>
+    </div>
+  `;
+}
+
+function workshopPrev() {
+  if (workshopStep > 0) { workshopStep--; renderWorkshopCol(); }
+}
+
+function workshopNext() {
+  if (workshopStep < WORKSHOP_STEPS.length - 1) {
+    workshopStep++;
+    renderWorkshopCol();
+  } else {
+    endWorkshop();
+  }
+}
+
+function workshopAction(idx) {
+  const step = WORKSHOP_STEPS[workshopStep];
+  if (step.actions[idx]?.fn) step.actions[idx].fn();
+}
+
+// ═══════════════════════════════════════
+//  SQL CASE WHEN IMPORT
+// ═══════════════════════════════════════
+function showSQLImportDialog() {
+  document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
+  const overlay = document.createElement('div');
+  overlay.className = 'load-dialog-overlay';
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+  const dialog = document.createElement('div');
+  dialog.className = 'sql-import-dialog';
+  dialog.innerHTML = `
+    <h3>📥 Import SQL CASE WHEN</h3>
+    <div class="sid-hint">
+      Paste a CASE WHEN block. Supports conditions like:<br>
+      <code>feature &lt;= 58.5</code> · <code>feature &gt; 10</code> · <code>feature = 'oxide'</code> · <code>feature &lt;&gt; 'fresh'</code>
+    </div>
+    <textarea id="sqlImportText" spellcheck="false" placeholder="CASE
+  WHEN Fe_pct <= 58 AND weathering = 'fresh' THEN 'BIF'
+  WHEN Fe_pct > 58 AND SiO2_pct <= 4.2 THEN 'HG_oxide'
+  ELSE 'unknown'
+END"></textarea>
+    <div class="sid-error" id="sqlImportError"></div>
+    <div class="sid-buttons">
+      <button class="sid-cancel" onclick="this.closest('.load-dialog-overlay').remove()">Cancel</button>
+      <button class="sid-apply" onclick="applySQLImport()">🌳 Build Tree</button>
+    </div>`;
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+  dialog.querySelector('textarea').focus();
+}
+
+function parseSQLCaseWhen(sql) {
+  // Strip comments
+  sql = sql.replace(/--[^\n]*/g, '');
+  // Normalize whitespace
+  sql = sql.replace(/\s+/g, ' ').trim();
+
+  // Extract WHEN...THEN pairs
+  const rules = [];
+  let elseVal = null;
+
+  // Match WHEN ... THEN ... patterns
+  const whenRegex = /WHEN\s+(.*?)\s+THEN\s+('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|[\w.\-]+)/gi;
+  let match;
+  while ((match = whenRegex.exec(sql)) !== null) {
+    const condStr = match[1].trim();
+    const rawPred = match[2].trim().replace(/^['"]|['"]$/g, '');
+    const conditions = parseConditions(condStr);
+    if (conditions === null) throw new Error(`Cannot parse conditions: ${condStr}`);
+    rules.push({ conditions, prediction: rawPred });
+  }
+
+  // Match ELSE
+  const elseMatch = sql.match(/ELSE\s+('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|[\w.\-]+)/i);
+  if (elseMatch) {
+    elseVal = elseMatch[1].trim().replace(/^['"]|['"]$/g, '');
+    if (elseVal.toUpperCase() === 'NULL') elseVal = null;
+  }
+
+  if (rules.length === 0) throw new Error('No WHEN clauses found');
+  return { rules, elseVal };
+}
+
+function parseConditions(str) {
+  // Split on AND (not inside quotes)
+  const parts = [];
+  let current = '', inQuote = false, qChar = '';
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i];
+    if (inQuote) {
+      current += c;
+      if (c === qChar) inQuote = false;
+    } else if (c === "'" || c === '"') {
+      inQuote = true; qChar = c; current += c;
+    } else if (str.slice(i).match(/^\s+AND\s+/i)) {
+      parts.push(current.trim());
+      const m = str.slice(i).match(/^\s+AND\s+/i);
+      i += m[0].length - 1;
+      current = '';
+    } else {
+      current += c;
+    }
+  }
+  if (current.trim()) parts.push(current.trim());
+
+  const conditions = [];
+  for (const part of parts) {
+    const cond = parseSingleCondition(part);
+    if (!cond) return null;
+    conditions.push(cond);
+  }
+  return conditions;
+}
+
+function parseSingleCondition(str) {
+  str = str.trim();
+  // Try operators in order: <=, >=, <>, !=, <, >, =
+  const ops = [
+    { sql: '<=', op: '≤', dir: 'left' },
+    { sql: '>=', op: '≥', dir: 'right_eq' },
+    { sql: '<>', op: '≠', dir: 'right' },
+    { sql: '!=', op: '≠', dir: 'right' },
+    { sql: '<',  op: '<', dir: 'left_strict' },
+    { sql: '>',  op: '>', dir: 'right' },
+    { sql: '=',  op: '=', dir: 'left' },
+  ];
+  for (const { sql: opStr, op, dir } of ops) {
+    const idx = str.indexOf(opStr);
+    if (idx === -1) continue;
+    const feature = str.slice(0, idx).trim();
+    let value = str.slice(idx + opStr.length).trim().replace(/^['"]|['"]$/g, '');
+    if (!feature) continue;
+
+    const numVal = parseFloat(value);
+    const isNumeric = !isNaN(numVal) && isFinite(numVal) && !/^['"]/.test(str.slice(idx + opStr.length).trim());
+
+    if (isNumeric) {
+      return { feature, op, value: numVal, type: 'numeric' };
+    } else {
+      return { feature, op, value, type: 'categorical' };
+    }
+  }
+  return null;
+}
+
+function buildTreeFromRules(rules, elseVal, depth = 0) {
+  const id = nodeIdCounter++;
+
+  // Base case: no rules left → else leaf
+  if (rules.length === 0) {
+    return { id, leaf: true, prediction: elseVal || 'unknown', classCounts: {}, gini: 0, n: 0, depth, confidence: 0, _rows: [] };
+  }
+
+  // Base case: single rule with no conditions → leaf
+  if (rules.length === 1 && rules[0].conditions.length === 0) {
+    return { id, leaf: true, prediction: rules[0].prediction, classCounts: {}, gini: 0, n: 0, depth, confidence: 0, _rows: [] };
+  }
+
+  // Find the best split: the first condition that appears across rules
+  // Group rules by their first condition's feature + threshold to find the root split
+  const firstConds = rules.filter(r => r.conditions.length > 0).map(r => r.conditions[0]);
+  if (firstConds.length === 0) {
+    // All rules have empty conditions — use first rule's prediction
+    return { id, leaf: true, prediction: rules[0].prediction, classCounts: {}, gini: 0, n: 0, depth, confidence: 0, _rows: [] };
+  }
+
+  // Find the most common split point (feature + value)
+  const splitKeys = {};
+  for (const c of firstConds) {
+    const key = `${c.feature}|${c.value}|${c.type}`;
+    splitKeys[key] = (splitKeys[key] || 0) + 1;
+  }
+  const bestKey = Object.keys(splitKeys).sort((a, b) => splitKeys[b] - splitKeys[a])[0];
+  const [sFeat, sVal, sType] = bestKey.split('|');
+  const splitValue = sType === 'numeric' ? parseFloat(sVal) : sVal;
+
+  // Determine split structure
+  let split;
+  if (sType === 'numeric') {
+    split = { feature: sFeat, type: 'numeric', threshold: splitValue, gain: 0, giniLeft: 0, giniRight: 0, nLeft: 0, nRight: 0 };
+  } else {
+    split = { feature: sFeat, type: 'categorical', category: splitValue, gain: 0, giniLeft: 0, giniRight: 0, nLeft: 0, nRight: 0 };
+  }
+
+  // Partition rules into left and right based on this split
+  const leftRules = [], rightRules = [];
+  for (const rule of rules) {
+    if (rule.conditions.length === 0) {
+      // Rule with no conditions left — treat as else
+      rightRules.push(rule);
+      continue;
+    }
+    const c = rule.conditions[0];
+    const matchesSplit = c.feature === sFeat &&
+      (sType === 'numeric' ? c.value === splitValue : c.value === splitValue);
+
+    if (matchesSplit) {
+      // This rule's first condition matches our split
+      const isLeft = (c.op === '≤' || c.op === '=' || c.op === '<');
+      const remaining = { conditions: rule.conditions.slice(1), prediction: rule.prediction };
+      if (isLeft) leftRules.push(remaining);
+      else rightRules.push(remaining);
+    } else {
+      // Different feature/value — push to both with condition intact
+      // This handles non-binary rule sets gracefully
+      rightRules.push(rule);
+    }
+  }
+
+  // If partitioning failed (everything on one side), make a leaf
+  if (leftRules.length === 0 || rightRules.length === 0) {
+    const allPreds = rules.map(r => r.prediction);
+    const pred = allPreds[0];
+    return { id, leaf: true, prediction: pred, classCounts: {}, gini: 0, n: 0, depth, confidence: 0, _rows: [] };
+  }
+
+  return {
+    id, leaf: false, split,
+    prediction: rules[0].prediction, classCounts: {}, gini: 0, n: 0,
+    depth, confidence: 0, _rows: [],
+    left: buildTreeFromRules(leftRules, elseVal, depth + 1),
+    right: buildTreeFromRules(rightRules, elseVal, depth + 1),
+  };
+}
+
+function applySQLImport() {
+  const textarea = document.getElementById('sqlImportText');
+  const errorDiv = document.getElementById('sqlImportError');
+  errorDiv.textContent = '';
+
+  try {
+    const sql = textarea.value.trim();
+    if (!sql) { errorDiv.textContent = 'Paste a SQL CASE WHEN statement'; return; }
+
+    const { rules, elseVal } = parseSQLCaseWhen(sql);
+
+    // Detect mode from predictions
+    const preds = rules.map(r => r.prediction);
+    const allNumeric = preds.every(p => !isNaN(parseFloat(p)) && isFinite(parseFloat(p)));
+    TREE_MODE = allNumeric ? 'regression' : 'classification';
+
+    // Build tree
+    nodeIdCounter = 0;
+    const tree = buildTreeFromRules(rules, elseVal);
+
+    // Attach metadata
+    const allFeatures = new Set();
+    for (const r of rules) for (const c of r.conditions) allFeatures.add(c.feature);
+    tree._features = [...allFeatures];
+    tree._target = 'imported';
+    tree._mode = TREE_MODE;
+    tree._classes = TREE_MODE === 'classification' ? [...new Set(preds)].sort() : [];
+    tree._rows = [];
+
+    TREE = tree;
+
+    // If data is loaded, evaluate against it
+    if (DATA) {
+      // Try to find a matching target column
+      const possibleTargets = DATA.headers.filter(h => !allFeatures.has(h));
+      if (possibleTargets.length > 0) {
+        // Rebuild _rows using data
+        const target = document.getElementById('targetSelect').value;
+        const validRows = DATA.rows.filter(r => r[target] !== '' && r[target] !== 'NA');
+        attachRowsToTree(TREE, validRows);
+        TREE._target = target;
+        TREE._rows = validRows;
+        TREE._features = DATA.headers.filter(h => h !== target);
+        if (TREE_MODE === 'classification') {
+          TREE._classes = [...new Set(validRows.map(r => r[target]))].sort();
+        }
+
+        // Compute stats
+        const metric = treeAccuracy(TREE, validRows, target);
+        const stats = countNodes(TREE);
+        const metricLabel = TREE_MODE === 'regression' ? 'R²' : 'Accuracy';
+        const metricVal = TREE_MODE === 'regression' ? metric.toFixed(3) : (metric * 100).toFixed(1) + '%';
+        document.getElementById('statsBar').innerHTML = `
+          <span>Rows: <span class="stat-val">${validRows.length}</span></span>
+          <span>Nodes: <span class="stat-val">${stats.total}</span></span>
+          <span>Leaves: <span class="stat-val">${stats.leaves}</span></span>
+          <span>Depth: <span class="stat-val">${stats.maxDepth}</span></span>
+          <span>${metricLabel}: <span class="stat-val">${metricVal}</span></span>
+          <span style="color:var(--amber);">imported</span>
+        `;
+      }
+    } else {
+      const stats = countNodes(TREE);
+      document.getElementById('statsBar').style.display = '';
+      document.getElementById('statsBar').innerHTML = `
+        <span>Nodes: <span class="stat-val">${stats.total}</span></span>
+        <span>Leaves: <span class="stat-val">${stats.leaves}</span></span>
+        <span>Depth: <span class="stat-val">${stats.maxDepth}</span></span>
+        <span style="color:var(--amber);">no data — load CSV to evaluate</span>
+      `;
+    }
+
+    selectedNodeId = null;
+    undoStack.length = 0;
+    const es = document.getElementById('emptyState');
+    if (es) es.style.display = 'none';
+    renderTree();
+    renderRules();
+    updateUndoBar();
+    setTimeout(zoomFit, 30);
+
+    document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
+    showToast(`📥 Imported ${rules.length} rules as tree`);
+
+  } catch (err) {
+    errorDiv.textContent = err.message;
+  }
+}
+
+function attachRowsToTree(node, rows) {
+  node._rows = rows;
+  if (node.leaf) {
+    // Update stats from data
+    node.n = rows.length;
+    if (TREE_MODE === 'classification' && rows.length > 0 && TREE._target) {
+      node.classCounts = countClasses(rows, TREE._target);
+      node.gini = giniImpurity(node.classCounts, rows.length);
+      const maj = majorityClass(node.classCounts);
+      node.confidence = maj ? (node.classCounts[maj] || 0) / rows.length : 0;
+    } else if (TREE_MODE === 'regression' && rows.length > 0 && TREE._target) {
+      node.gini = regVariance(rows, TREE._target);
+      node.confidence = regStd(rows, TREE._target);
+      node.classCounts = {};
+    }
+    return;
+  }
+  if (!node.split) return;
+  const [leftRows, rightRows] = splitRows(rows, node.split);
+  node.n = rows.length;
+  node.split.nLeft = leftRows.length;
+  node.split.nRight = rightRows.length;
+
+  if (TREE_MODE === 'classification' && TREE._target) {
+    node.classCounts = countClasses(rows, TREE._target);
+    node.gini = giniImpurity(node.classCounts, rows.length);
+    const lc = countClasses(leftRows, TREE._target), rc = countClasses(rightRows, TREE._target);
+    node.split.giniLeft = giniImpurity(lc, leftRows.length);
+    node.split.giniRight = giniImpurity(rc, rightRows.length);
+    node.split.gain = node.gini - (leftRows.length * node.split.giniLeft + rightRows.length * node.split.giniRight) / rows.length;
+  } else if (TREE_MODE === 'regression' && TREE._target) {
+    node.gini = regVariance(rows, TREE._target);
+    node.classCounts = {};
+    const lVar = regVariance(leftRows, TREE._target), rVar = regVariance(rightRows, TREE._target);
+    node.split.giniLeft = lVar; node.split.giniRight = rVar;
+    node.split.gain = node.gini - (leftRows.length * lVar + rightRows.length * rVar) / (rows.length || 1);
+  }
+
+  attachRowsToTree(node.left, leftRows);
+  attachRowsToTree(node.right, rightRows);
+}
+
+function exportCSVPredictions() {
+  if (!TREE || !DATA) return;
+  const isReg = TREE_MODE === 'regression';
+  const predLabel = isReg ? 'predicted_value' : 'predicted_class';
+  const confLabel = isReg ? 'std_dev' : 'confidence';
+  const headers = [...DATA.headers, predLabel, confLabel, 'leaf_id'];
+  let csv = headers.join(',') + '\n';
+  for (const row of DATA.rows) {
+    const pred = predictRow(TREE, row);
+    const vals = DATA.headers.map(h => { const v = row[h]; return typeof v === 'string' && v.includes(',') ? `"${v}"` : v; });
+    const predVal = isReg ? Number(pred.class).toFixed(3) : pred.class;
+    vals.push(predVal, pred.confidence.toFixed(3), pred.leafId);
+    csv += vals.join(',') + '\n';
+  }
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'arborist_predictions.csv'; a.click();
+  showToast('CSV predictions downloaded');
+}
+
+// ═══════════════════════════════════════
+//  FILE HANDLING
+// ═══════════════════════════════════════
+const dropZones = document.querySelectorAll('.drop-zone');
+const fileInput = document.getElementById('fileInput');
+dropZones.forEach(dz => {
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) readCSVFile(e.dataTransfer.files[0]);
+  });
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) readCSVFile(e.target.files[0]); });
+
+function readCSVFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => { DATA._name = file.name.replace(/\.[^.]+$/, ''); loadData(e.target.result); showToast(`Loaded ${file.name}`); };
+  reader.readAsText(file);
+}
+
+// ═══════════════════════════════════════
+//  PROJECTS — IndexedDB storage
+// ═══════════════════════════════════════
+const DB_NAME = 'arborist_db';
+const DB_VERSION = 1;
+const STORE_NAME = 'projects';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'name' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function dbGetAll() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function dbGet(name) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.get(name);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function dbPut(project) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.put(project);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function dbDelete(name) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.delete(name);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function buildProjectPayload() {
+  return {
+    savedAt: new Date().toISOString(),
+    mode: TREE_MODE,
+    config: {
+      target: document.getElementById('targetSelect').value,
+      maxDepth: document.getElementById('maxDepth').value,
+      minLeaf: document.getElementById('minLeaf').value,
+      minSplit: document.getElementById('minSplit').value,
+    },
+    types: DATA ? { ...DATA.types } : {},
+    csv: reconstructCSV(),
+    tree: TREE ? serializeTree(TREE) : null,
+    edits: undoStack.length,
+  };
+}
+
+function restoreProjectState(p) {
+  TREE_MODE = p.mode || 'classification';
+  loadData(p.csv);
+
+  // Restore type overrides
+  if (p.types && DATA) {
+    for (const h of DATA.headers) {
+      if (p.types[h]) DATA.types[h] = p.types[h];
+    }
+    renderDataSummary();
+    // Refresh target select with restored types
+    const sel = document.getElementById('targetSelect');
+    sel.innerHTML = '';
+    const cats = DATA.headers.filter(h => DATA.types[h] === 'categorical');
+    const nums = DATA.headers.filter(h => DATA.types[h] === 'numeric');
+    [...cats, ...nums].forEach(h => {
+      const opt = document.createElement('option');
+      opt.value = h; opt.textContent = h + (DATA.types[h] === 'categorical' ? ' ●' : ' #');
+      sel.appendChild(opt);
+    });
+  }
+
+  if (p.config) {
+    document.getElementById('targetSelect').value = p.config.target;
+    document.getElementById('maxDepth').value = p.config.maxDepth;
+    document.getElementById('minLeaf').value = p.config.minLeaf;
+    document.getElementById('minSplit').value = p.config.minSplit;
+  }
+
+  if (p.tree) {
+    TREE = deserializeTree(p.tree, DATA.rows);
+    const target = p.config?.target || document.getElementById('targetSelect').value;
+    const features = DATA.headers.filter(h => h !== target);
+    const validRows = DATA.rows.filter(r => r[target] !== '' && r[target] !== 'NA');
+    TREE._target = target; TREE._features = features;
+    TREE._rows = validRows; TREE._mode = TREE_MODE;
+    TREE._classes = TREE_MODE === 'classification' ? [...new Set(validRows.map(r => r[target]))].sort() : [];
+    selectedNodeId = null; undoStack.length = 0;
+    const es = document.getElementById('emptyState');
+    if (es) es.style.display = 'none';
+    renderTree(); renderRules(); updateUndoBar();
+    const metric = treeAccuracy(TREE, validRows, target);
+    const stats = countNodes(TREE);
+    const metricLabel = TREE_MODE === 'regression' ? 'R²' : 'Accuracy';
+    const metricVal = TREE_MODE === 'regression' ? metric.toFixed(3) : (metric * 100).toFixed(1) + '%';
+    document.getElementById('statsBar').innerHTML = `
+      <span>Rows: <span class="stat-val">${validRows.length}</span></span>
+      <span>Nodes: <span class="stat-val">${stats.total}</span></span>
+      <span>Leaves: <span class="stat-val">${stats.leaves}</span></span>
+      <span>Depth: <span class="stat-val">${stats.maxDepth}</span></span>
+      <span>${metricLabel}: <span class="stat-val">${metricVal}</span></span>
+    `;
+    setTimeout(zoomFit, 30);
+  }
+}
+
+async function saveProject() {
+  if (!DATA || !TREE) { showToast('Nothing to save — load data and grow a tree first'); return; }
+  const defaultName = (DATA._name || 'project') + (TREE_MODE === 'regression' ? ' (reg)' : '');
+  const name = prompt('Project name:', defaultName);
+  if (!name) return;
+
+  const project = { name, ...buildProjectPayload() };
+  try {
+    await dbPut(project);
+    showToast(`💾 Saved "${name}"`);
+    refreshSavedLists();
+  } catch (e) {
+    showToast('Save failed: ' + e.message);
+  }
+}
+
+async function loadProject(name) {
+  try {
+    const p = await dbGet(name);
+    if (!p) { showToast('Project not found'); return; }
+    restoreProjectState(p);
+    document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
+    showToast(`📂 Loaded "${name}"`);
+    DATA._name = name;
+  } catch (e) { showToast('Load failed: ' + e.message); }
+}
+
+async function deleteProject(name, e) {
+  if (e) e.stopPropagation();
+  if (!confirm(`Delete "${name}"?`)) return;
+  try {
+    await dbDelete(name);
+    showToast(`Deleted "${name}"`);
+    refreshSavedLists();
+    const dialog = document.querySelector('.load-dialog');
+    if (dialog) showLoadDialog();
+  } catch (err) { showToast('Delete failed: ' + err.message); }
+}
+
+async function showLoadDialog() {
+  document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
+  const overlay = document.createElement('div');
+  overlay.className = 'load-dialog-overlay';
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+  const dialog = document.createElement('div');
+  dialog.className = 'load-dialog';
+  dialog.innerHTML = '<h3>📂 Open Project</h3>';
+
+  let projects;
+  try { projects = await dbGetAll(); }
+  catch { projects = []; }
+
+  projects.sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''));
+
+  if (projects.length === 0) {
+    dialog.innerHTML += '<div class="load-dialog-empty">No saved projects yet</div>';
+  } else {
+    for (const p of projects) {
+      const date = p.savedAt ? new Date(p.savedAt).toLocaleDateString() : '—';
+      const mode = p.mode === 'regression' ? 'reg' : 'cls';
+      const rows = p.csv ? p.csv.split('\n').length - 1 : '?';
+      const item = document.createElement('div');
+      item.className = 'load-dialog-item';
+      item.innerHTML = `
+        <div class="ldi-info">
+          <div class="ldi-name">${p.name}</div>
+          <div class="ldi-meta">${date} · ${mode} · ${rows} rows${p.edits ? ' · ' + p.edits + ' edits' : ''}</div>
+        </div>`;
+      const delBtn = document.createElement('button');
+      delBtn.className = 'ldi-delete';
+      delBtn.textContent = '✕';
+      delBtn.onclick = (e) => deleteProject(p.name, e);
+      item.appendChild(delBtn);
+      item.onclick = () => loadProject(p.name);
+      dialog.appendChild(item);
+    }
+  }
+
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'load-dialog-close';
+  closeBtn.textContent = 'Cancel';
+  closeBtn.onclick = () => overlay.remove();
+  dialog.appendChild(closeBtn);
+
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+}
+
+// ═══════════════════════════════════════
+//  PROJECTS — JSON export/import
+// ═══════════════════════════════════════
+function exportProject() {
+  if (!DATA || !TREE) { showToast('Nothing to export — load data and grow a tree first'); return; }
+  const project = {
+    _format: 'arborist-v1',
+    name: DATA._name || 'project',
+    ...buildProjectPayload(),
+  };
+  const json = JSON.stringify(project, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (DATA._name || 'arborist_project') + '.json';
+  a.click();
+  showToast('📤 Exported project as JSON');
+}
+
+function importProject(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const p = JSON.parse(e.target.result);
+      if (!p.csv) { showToast('Invalid project file — no data found'); return; }
+      restoreProjectState(p);
+      DATA._name = p.name || file.name.replace(/\.json$/, '');
+      showToast(`📥 Imported "${DATA._name}"`);
+    } catch (err) { showToast('Import failed: ' + err.message); }
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('importInput').addEventListener('change', e => {
+  if (e.target.files[0]) importProject(e.target.files[0]);
+  e.target.value = '';
+});
+
+// Tree serialization (strip _rows to save space, store structure only)
+function serializeTree(node) {
+  const obj = {
+    id: node.id, leaf: node.leaf, prediction: node.prediction,
+    classCounts: node.classCounts, gini: node.gini, n: node.n,
+    depth: node.depth, confidence: node.confidence,
+  };
+  if (!node.leaf && node.split) {
+    obj.split = { ...node.split };
+    obj.left = serializeTree(node.left);
+    obj.right = serializeTree(node.right);
+  }
+  return obj;
+}
+
+function deserializeTree(obj, allRows) {
+  return rebuildRows(obj, allRows);
+}
+
+function rebuildRows(node, rows) {
+  node._rows = rows;
+  if (!node.leaf && node.split && node.left && node.right) {
+    const [leftRows, rightRows] = splitRows(rows, node.split);
+    node.left = rebuildRows(node.left, leftRows);
+    node.right = rebuildRows(node.right, rightRows);
+  }
+  return node;
+}
+
+function reconstructCSV() {
+  if (!DATA) return '';
+  const lines = [DATA.headers.join(',')];
+  for (const r of DATA.rows) {
+    lines.push(DATA.headers.map(h => {
+      const v = r[h];
+      if (typeof v === 'string' && (v.includes(',') || v.includes('"'))) return '"' + v.replace(/"/g, '""') + '"';
+      return v;
+    }).join(','));
+  }
+  return lines.join('\n');
+}
+
+// Refresh saved lists on splash + left panel
+async function refreshSavedLists() {
+  let projects;
+  try { projects = await dbGetAll(); }
+  catch { projects = []; }
+
+  projects.sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''));
+
+  const splashList = document.getElementById('splashSavedList');
+  if (splashList) {
+    if (projects.length === 0) {
+      splashList.innerHTML = '<div class="splash-saved-empty">No saved projects</div>';
+    } else {
+      splashList.innerHTML = projects.slice(0, 5).map(p => {
+        const date = p.savedAt ? new Date(p.savedAt).toLocaleDateString() : '';
+        const esc = p.name.replace(/'/g, "\\'");
+        return `<div class="splash-saved-item" onclick="loadProject('${esc}')">
+          <span class="ss-name">${p.name}</span>
+          <span class="ss-date">${date}</span>
+        </div>`;
+      }).join('');
+    }
+  }
+}
+
+refreshSavedLists();
+
+// ═══════════════════════════════════════
+//  EXAMPLE DATASETS
+// ═══════════════════════════════════════
+function mulberry32(a) {
+  return function() {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function generateIronOre() {
+  const rows = [];
+  const rng = mulberry32(42);
+  function r(min, max) { return min + rng() * (max - min); }
+  function pick(arr) { return arr[Math.floor(rng() * arr.length)]; }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  for (let i = 0; i < 200; i++) {
+    const depth = r(0, 150);
+    let weathering, domain, fe, sio2, al2o3, mn, loi, mag;
+
+    if (depth < 30) {
+      weathering = pick(['oxide','oxide','oxide','transition']);
+      if (weathering === 'oxide') {
+        fe = clamp(r(58,68)+r(-3,3),40,70); sio2 = clamp(r(1,5)+r(-1,1),0.5,15);
+        al2o3 = clamp(r(1,4),0.5,8); mn = clamp(r(0.1,0.8),0,2);
+        loi = clamp(r(2,6),0,12); mag = clamp(r(5,25),0,50);
+        domain = fe > 62 ? 'HG_oxide' : 'MG_oxide';
+      } else {
+        fe = clamp(r(45,58),30,65); sio2 = clamp(r(5,15),1,25);
+        al2o3 = clamp(r(3,8),1,12); mn = clamp(r(0.3,1.5),0,3);
+        loi = clamp(r(4,9),0,15); mag = clamp(r(15,40),0,60);
+        domain = 'transition';
+      }
+    } else if (depth < 70) {
+      weathering = pick(['transition','transition','fresh','oxide']);
+      if (weathering === 'oxide') {
+        fe = clamp(r(55,65),40,70); sio2 = clamp(r(2,8),0.5,15);
+        al2o3 = clamp(r(1,5),0.5,10); mn = clamp(r(0.2,1),0,2);
+        loi = clamp(r(3,7),0,12); mag = clamp(r(8,30),0,50);
+        domain = fe > 60 ? 'HG_oxide' : 'MG_oxide';
+      } else if (weathering === 'transition') {
+        fe = clamp(r(40,55),30,65); sio2 = clamp(r(8,20),2,30);
+        al2o3 = clamp(r(4,10),1,15); mn = clamp(r(0.5,2),0,4);
+        loi = clamp(r(5,10),0,15); mag = clamp(r(20,50),5,70);
+        domain = 'transition';
+      } else {
+        fe = clamp(r(30,45),20,55); sio2 = clamp(r(20,40),10,50);
+        al2o3 = clamp(r(5,12),2,18); mn = clamp(r(0.1,0.5),0,2);
+        loi = clamp(r(1,4),0,8); mag = clamp(r(30,70),10,90);
+        domain = 'fresh';
+      }
+    } else {
+      weathering = pick(['fresh','fresh','fresh','transition']);
+      fe = clamp(r(25,42),15,55); sio2 = clamp(r(25,50),10,60);
+      al2o3 = clamp(r(5,14),2,20); mn = clamp(r(0.05,0.4),0,1);
+      loi = clamp(r(0.5,3),0,6); mag = clamp(r(40,80),20,100);
+      domain = weathering === 'transition' ? 'transition' : 'fresh';
+    }
+    if (rng() < 0.05) {
+      domain = 'contaminant'; sio2 = clamp(r(40,60),30,70); fe = clamp(r(15,30),10,40);
+    }
+    rows.push([depth.toFixed(1),fe.toFixed(1),sio2.toFixed(1),al2o3.toFixed(1),mn.toFixed(2),loi.toFixed(1),mag.toFixed(0),weathering,domain]);
+  }
+  return 'depth_m,Fe_pct,SiO2_pct,Al2O3_pct,Mn_pct,LOI_pct,mag_sus,weathering,domain\n' + rows.map(r => r.join(',')).join('\n');
+}
+
+function generateRockType() {
+  const rows = [], rng = mulberry32(123);
+  function r(min, max) { return min + rng() * (max - min); }
+  const templates = {
+    basalt:   { SiO2:[45,52],TiO2:[0.8,2.5],Al2O3:[14,18],Fe2O3:[8,14],MgO:[5,10],CaO:[8,12],Na2O:[2,3.5],K2O:[0.2,1.5] },
+    andesite: { SiO2:[52,63],TiO2:[0.5,1.5],Al2O3:[15,19],Fe2O3:[4,9],MgO:[2,5],CaO:[4,8],Na2O:[3,5],K2O:[1,3] },
+    dacite:   { SiO2:[63,70],TiO2:[0.3,0.8],Al2O3:[14,17],Fe2O3:[2,5],MgO:[1,3],CaO:[2,5],Na2O:[3.5,5],K2O:[1.5,4] },
+    rhyolite: { SiO2:[70,78],TiO2:[0.05,0.4],Al2O3:[11,15],Fe2O3:[0.5,3],MgO:[0.1,1],CaO:[0.3,2],Na2O:[3,5],K2O:[3,6] },
+  };
+  for (const [rock, t] of Object.entries(templates)) {
+    for (let i = 0; i < 40; i++) {
+      const row = [];
+      for (const [, [lo, hi]] of Object.entries(t)) row.push(r(lo, hi).toFixed(2));
+      row.push(rock); rows.push(row);
+    }
+  }
+  for (let i = rows.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [rows[i], rows[j]] = [rows[j], rows[i]]; }
+  return 'SiO2_pct,TiO2_pct,Al2O3_pct,Fe2O3_pct,MgO_pct,CaO_pct,Na2O_pct,K2O_pct,rock_type\n' + rows.map(r => r.join(',')).join('\n');
+}
+
+function generateIris() {
+  const d = [
+    [5.1,3.5,1.4,0.2,'setosa'],[4.9,3.0,1.4,0.2,'setosa'],[4.7,3.2,1.3,0.2,'setosa'],
+    [4.6,3.1,1.5,0.2,'setosa'],[5.0,3.6,1.4,0.2,'setosa'],[5.4,3.9,1.7,0.4,'setosa'],
+    [4.6,3.4,1.4,0.3,'setosa'],[5.0,3.4,1.5,0.2,'setosa'],[4.4,2.9,1.4,0.2,'setosa'],
+    [4.9,3.1,1.5,0.1,'setosa'],[5.4,3.7,1.5,0.2,'setosa'],[4.8,3.4,1.6,0.2,'setosa'],
+    [4.8,3.0,1.4,0.1,'setosa'],[4.3,3.0,1.1,0.1,'setosa'],[5.8,4.0,1.2,0.2,'setosa'],
+    [5.7,4.4,1.5,0.4,'setosa'],[5.4,3.9,1.3,0.4,'setosa'],[5.1,3.5,1.4,0.3,'setosa'],
+    [5.7,3.8,1.7,0.3,'setosa'],[5.1,3.8,1.5,0.3,'setosa'],[5.4,3.4,1.7,0.2,'setosa'],
+    [5.1,3.7,1.5,0.4,'setosa'],[4.6,3.6,1.0,0.2,'setosa'],[5.1,3.3,1.7,0.5,'setosa'],
+    [4.8,3.4,1.9,0.2,'setosa'],[5.0,3.0,1.6,0.2,'setosa'],[5.0,3.4,1.6,0.4,'setosa'],
+    [5.2,3.5,1.5,0.2,'setosa'],[5.2,3.4,1.4,0.2,'setosa'],[4.7,3.2,1.6,0.2,'setosa'],
+    [4.8,3.1,1.6,0.2,'setosa'],[5.4,3.4,1.5,0.4,'setosa'],[5.2,4.1,1.5,0.1,'setosa'],
+    [5.5,4.2,1.4,0.2,'setosa'],[4.9,3.1,1.5,0.2,'setosa'],[5.0,3.2,1.2,0.2,'setosa'],
+    [5.5,3.5,1.3,0.2,'setosa'],[4.9,3.6,1.4,0.1,'setosa'],[4.4,3.0,1.3,0.2,'setosa'],
+    [5.1,3.4,1.5,0.2,'setosa'],[5.0,3.5,1.3,0.3,'setosa'],[4.5,2.3,1.3,0.3,'setosa'],
+    [4.4,3.2,1.3,0.2,'setosa'],[5.0,3.5,1.6,0.6,'setosa'],[5.1,3.8,1.9,0.4,'setosa'],
+    [4.8,3.0,1.4,0.3,'setosa'],[5.1,3.8,1.6,0.2,'setosa'],[4.6,3.2,1.4,0.2,'setosa'],
+    [5.3,3.7,1.5,0.2,'setosa'],[5.0,3.3,1.4,0.2,'setosa'],
+    [7.0,3.2,4.7,1.4,'versicolor'],[6.4,3.2,4.5,1.5,'versicolor'],[6.9,3.1,4.9,1.5,'versicolor'],
+    [5.5,2.3,4.0,1.3,'versicolor'],[6.5,2.8,4.6,1.5,'versicolor'],[5.7,2.8,4.5,1.3,'versicolor'],
+    [6.3,3.3,4.7,1.6,'versicolor'],[4.9,2.4,3.3,1.0,'versicolor'],[6.6,2.9,4.6,1.3,'versicolor'],
+    [5.2,2.7,3.9,1.4,'versicolor'],[5.0,2.0,3.5,1.0,'versicolor'],[5.9,3.0,4.2,1.5,'versicolor'],
+    [6.0,2.2,4.0,1.0,'versicolor'],[6.1,2.9,4.7,1.4,'versicolor'],[5.6,2.9,3.6,1.3,'versicolor'],
+    [6.7,3.1,4.4,1.4,'versicolor'],[5.6,3.0,4.5,1.5,'versicolor'],[5.8,2.7,4.1,1.0,'versicolor'],
+    [6.2,2.2,4.5,1.5,'versicolor'],[5.6,2.5,3.9,1.1,'versicolor'],[5.9,3.2,4.8,1.8,'versicolor'],
+    [6.1,2.8,4.0,1.3,'versicolor'],[6.3,2.5,4.9,1.5,'versicolor'],[6.1,2.8,4.7,1.2,'versicolor'],
+    [6.4,2.9,4.3,1.3,'versicolor'],[6.6,3.0,4.4,1.4,'versicolor'],[6.8,2.8,4.8,1.4,'versicolor'],
+    [6.7,3.0,5.0,1.7,'versicolor'],[6.0,2.9,4.5,1.5,'versicolor'],[5.7,2.6,3.5,1.0,'versicolor'],
+    [5.5,2.4,3.8,1.1,'versicolor'],[5.5,2.4,3.7,1.0,'versicolor'],[5.8,2.7,3.9,1.2,'versicolor'],
+    [6.0,2.7,5.1,1.6,'versicolor'],[5.4,3.0,4.5,1.5,'versicolor'],[6.0,3.4,4.5,1.6,'versicolor'],
+    [6.7,3.1,4.7,1.5,'versicolor'],[6.3,2.3,4.4,1.3,'versicolor'],[5.6,3.0,4.1,1.3,'versicolor'],
+    [5.5,2.5,4.0,1.3,'versicolor'],[5.5,2.6,4.4,1.2,'versicolor'],[6.1,3.0,4.6,1.4,'versicolor'],
+    [5.8,2.6,4.0,1.2,'versicolor'],[5.0,2.3,3.3,1.0,'versicolor'],[5.6,2.7,4.2,1.3,'versicolor'],
+    [5.7,3.0,4.2,1.2,'versicolor'],[5.7,2.9,4.2,1.3,'versicolor'],[6.2,2.9,4.3,1.3,'versicolor'],
+    [5.1,2.5,3.0,1.1,'versicolor'],[5.7,2.8,4.1,1.3,'versicolor'],
+    [6.3,3.3,6.0,2.5,'virginica'],[5.8,2.7,5.1,1.9,'virginica'],[7.1,3.0,5.9,2.1,'virginica'],
+    [6.3,2.9,5.6,1.8,'virginica'],[6.5,3.0,5.8,2.2,'virginica'],[7.6,3.0,6.6,2.1,'virginica'],
+    [4.9,2.5,4.5,1.7,'virginica'],[7.3,2.9,6.3,1.8,'virginica'],[6.7,2.5,5.8,1.8,'virginica'],
+    [7.2,3.6,6.1,2.5,'virginica'],[6.5,3.2,5.1,2.0,'virginica'],[6.4,2.7,5.3,1.9,'virginica'],
+    [6.8,3.0,5.5,2.1,'virginica'],[5.7,2.5,5.0,2.0,'virginica'],[5.8,2.8,5.1,2.4,'virginica'],
+    [6.4,3.2,5.3,2.3,'virginica'],[6.5,3.0,5.5,1.8,'virginica'],[7.7,3.8,6.7,2.2,'virginica'],
+    [7.7,2.6,6.9,2.3,'virginica'],[6.0,2.2,5.0,1.5,'virginica'],[6.9,3.2,5.7,2.3,'virginica'],
+    [5.6,2.8,4.9,2.0,'virginica'],[7.7,2.8,6.7,2.0,'virginica'],[6.3,2.7,4.9,1.8,'virginica'],
+    [6.7,3.3,5.7,2.1,'virginica'],[7.2,3.2,6.0,1.8,'virginica'],[6.2,2.8,4.8,1.8,'virginica'],
+    [6.1,3.0,4.9,1.8,'virginica'],[6.4,2.8,5.6,2.1,'virginica'],[7.2,3.0,5.8,1.6,'virginica'],
+    [7.4,2.8,6.1,1.9,'virginica'],[7.9,3.8,6.4,2.0,'virginica'],[6.4,2.8,5.6,2.2,'virginica'],
+    [6.3,2.8,5.1,1.5,'virginica'],[6.1,2.6,5.6,1.4,'virginica'],[7.7,3.0,6.1,2.3,'virginica'],
+    [6.3,3.4,5.6,2.4,'virginica'],[6.4,3.1,5.5,1.8,'virginica'],[6.0,3.0,4.8,1.8,'virginica'],
+    [6.9,3.1,5.4,2.1,'virginica'],[6.7,3.1,5.6,2.4,'virginica'],[6.9,3.1,5.1,2.3,'virginica'],
+    [5.8,2.7,5.1,1.9,'virginica'],[6.8,3.2,5.9,2.3,'virginica'],[6.7,3.3,5.7,2.5,'virginica'],
+    [6.7,3.0,5.2,2.3,'virginica'],[6.3,2.5,5.0,1.9,'virginica'],[6.5,3.0,5.2,2.0,'virginica'],
+    [6.2,3.4,5.4,2.3,'virginica'],[5.9,3.0,5.1,1.8,'virginica'],
+  ];
+  return 'sepal_length,sepal_width,petal_length,petal_width,species\n' + d.map(r => r.join(',')).join('\n');
+}
+
+const EXAMPLE_DATA = { ironore: generateIronOre(), rocktype: generateRockType(), iris: generateIris() };
+
+function loadExample(name) {
+  loadData(EXAMPLE_DATA[name]);
+  const nameMap = { ironore: 'Iron Ore Domains', rocktype: 'Rock Type', iris: 'Iris' };
+  DATA._name = nameMap[name] || name;
+  const presets = {
+    ironore: { target: 'domain', depth: 5, minLeaf: 3, minSplit: 6 },
+    rocktype: { target: 'rock_type', depth: 4, minLeaf: 3, minSplit: 6 },
+    iris: { target: 'species', depth: 4, minLeaf: 3, minSplit: 6 },
+  };
+  const p = presets[name];
+  if (p) {
+    document.getElementById('targetSelect').value = p.target;
+    document.getElementById('maxDepth').value = p.depth;
+    document.getElementById('minLeaf').value = p.minLeaf;
+    document.getElementById('minSplit').value = p.minSplit;
+  }
+  growTree();
+  setTimeout(zoomFit, 50);
+  showToast(`Loaded example: ${name}`);
+}
+
+// ═══════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════
+function showToast(msg) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+</script>
+</body>
+</html>
