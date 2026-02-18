@@ -12,7 +12,11 @@ Arborist is a browser-based interactive tool for building decision trees with a 
 
 ## Quick Start
 
-1. Download `arborist.html`
+**[Open Arborist →](https://endarthur.github.io/arborist/)**
+
+Or run it locally:
+
+1. Download `index.html`
 2. Open it in any modern browser
 3. Load a CSV or use an example dataset
 4. Click 🌱 Grow Tree
