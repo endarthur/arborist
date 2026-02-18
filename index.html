@@ -233,7 +233,7 @@ body {
   margin-top:0.3rem; max-height:100px; overflow-y:auto; scrollbar-width:thin;
 }
 .data-summary .ds-col {
-  display:flex; justify-content:space-between; padding:0.1rem 0.2rem;
+  display:flex; align-items:center; gap:0.2rem; padding:0.1rem 0.2rem;
   font-size:0.55rem;
 }
 .data-summary .ds-col:nth-child(even) { background:var(--surface2); }
@@ -244,6 +244,126 @@ body {
   transition:all 0.15s;
 }
 .data-summary .ds-col-toggle:hover { background:var(--cyan); color:var(--bg); }
+
+/* ── ROW FILTER ── */
+.filter-section {
+  margin-top:0.5rem; padding-top:0.5rem;
+  border-top:1px solid var(--border);
+}
+.filter-label {
+  font-family:var(--mono); font-size:0.52rem; color:var(--text-faint);
+  text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;
+}
+.filter-row {
+  display:flex; gap:0.25rem; align-items:flex-start; position:relative;
+}
+.filter-input {
+  flex:1; background:var(--bg); border:1px solid var(--border);
+  border-radius:4px; color:var(--text); font-family:var(--mono);
+  font-size:0.62rem; padding:0.35rem 0.4rem;
+  outline:none; resize:none; min-height:1.4em;
+  box-sizing:border-box;
+}
+.filter-input:focus { border-color:var(--green); }
+.filter-input::placeholder { color:var(--text-faint); opacity:0.5; }
+.filter-actions {
+  display:flex; gap:0.2rem; flex-shrink:0;
+}
+.filter-btn {
+  padding:0.3rem 0.4rem; border:1px solid var(--border); border-radius:3px;
+  background:var(--surface2); color:var(--text-dim); font-family:var(--mono);
+  font-size:0.55rem; cursor:pointer; transition:all 0.15s;
+}
+.filter-btn:hover { border-color:var(--green); color:var(--green-bright); }
+.filter-btn.filter-clear:hover { border-color:var(--red); color:var(--red); }
+.filter-error {
+  font-family:var(--mono); font-size:0.52rem; color:var(--red);
+  padding-top:0.15rem; display:none; min-height:0;
+}
+.filter-error.active { display:block; }
+.filter-error.warning { color:var(--amber); }
+.filter-count {
+  font-family:var(--mono); font-size:0.52rem; color:var(--text-faint);
+  margin-top:0.15rem;
+}
+.filter-count .fc-active { color:var(--green-bright); }
+
+/* ── EXPRESSION AUTOCOMPLETE ── */
+.expr-ac {
+  display:none; position:absolute; left:0; bottom:100%;
+  max-height:160px; overflow-y:auto;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:4px; z-index:30; min-width:180px;
+  box-shadow:0 -2px 8px rgba(0,0,0,0.4);
+  scrollbar-width:thin; scrollbar-color:var(--border) transparent;
+}
+.expr-ac.open { display:block; }
+.ac-item {
+  padding:0.2rem 0.4rem; font-size:0.6rem; cursor:pointer;
+  display:flex; gap:0.4rem; align-items:center;
+}
+.ac-item:hover, .ac-item.selected { background:var(--bg); }
+.ac-item .ac-label { color:var(--text); font-family:var(--mono); }
+.ac-item .ac-type {
+  color:var(--text-faint); font-family:var(--mono); font-size:0.48rem;
+  margin-left:auto;
+}
+.ac-item.ac-col-num .ac-label { color:var(--cyan); }
+.ac-item.ac-col-cat .ac-label { color:var(--amber); }
+
+/* ── CSV CONFIG ── */
+.csv-config-gear {
+  background:none; border:none; color:var(--text-faint);
+  font-size:0.65rem; cursor:pointer; padding:0; line-height:1;
+  transition:color 0.15s;
+}
+.csv-config-gear:hover { color:var(--amber); }
+.csv-config-dialog {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:1.2rem; width:360px; max-width:90vw;
+  box-shadow:0 8px 32px rgba(0,0,0,0.5);
+}
+.csv-config-dialog h3 {
+  font-family:var(--display); font-size:0.9rem; color:var(--text);
+  margin:0 0 0.6rem; font-weight:700;
+}
+.csv-cfg-row {
+  display:flex; align-items:center; gap:0.5rem;
+  margin-bottom:0.5rem;
+}
+.csv-cfg-row label {
+  font-family:var(--mono); font-size:0.6rem; color:var(--text-dim);
+  min-width:6rem;
+}
+.csv-cfg-row select, .csv-cfg-row input[type="text"] {
+  flex:1; background:var(--bg); border:1px solid var(--border);
+  border-radius:4px; color:var(--text); font-family:var(--mono);
+  font-size:0.62rem; padding:0.3rem 0.4rem; outline:none;
+}
+.csv-cfg-row select:focus, .csv-cfg-row input:focus { border-color:var(--green); }
+.csv-cfg-row .cfg-detected {
+  font-family:var(--mono); font-size:0.5rem; color:var(--text-faint);
+  font-style:italic;
+}
+.csv-cfg-buttons {
+  display:flex; gap:0.3rem; margin-top:0.8rem;
+}
+.csv-cfg-buttons button {
+  flex:1; padding:0.4rem; border-radius:4px; font-family:var(--mono);
+  font-size:0.65rem; cursor:pointer; transition:all 0.15s;
+}
+.csv-cfg-apply {
+  background:var(--green); border:none; color:#111; font-weight:700;
+}
+.csv-cfg-apply:hover { filter:brightness(1.15); }
+.csv-cfg-reset {
+  background:var(--surface2); border:1px solid var(--border); color:var(--text-dim);
+}
+.csv-cfg-reset:hover { border-color:var(--amber); color:var(--amber); }
+.csv-cfg-cancel {
+  background:var(--surface2); border:1px solid var(--border); color:var(--text-dim);
+}
+.csv-cfg-cancel:hover { border-color:var(--text-dim); color:var(--text); }
 
 /* ── LOAD DIALOG ── */
 .load-dialog-overlay {
@@ -665,12 +785,30 @@ body {
     </div>
 
     <div class="section">
-      <div class="section-label">Data</div>
+      <div class="section-label" style="display:flex;justify-content:space-between;align-items:center;">
+        Data
+        <button id="csvConfigBtn" class="csv-config-gear" onclick="showCSVConfig()" style="display:none;" title="CSV parsing settings">⚙</button>
+      </div>
       <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
         📂 Drop CSV here or click to browse
       </div>
       <input type="file" id="fileInput" accept=".csv,.tsv,.txt" style="display:none" />
       <div id="dataSummary" style="display:none;"></div>
+      <div id="filterSection" style="display:none;">
+        <div class="filter-section">
+          <div class="filter-label">Row Filter</div>
+          <div class="filter-row">
+            <input type="text" class="filter-input" id="filterInput"
+              placeholder="e.g. r.Fe_pct > 60" spellcheck="false" autocomplete="off" />
+            <div class="filter-actions">
+              <button class="filter-btn" onclick="applyFilter()" title="Apply filter">✓</button>
+              <button class="filter-btn filter-clear" onclick="clearFilter()" title="Clear filter">✕</button>
+            </div>
+          </div>
+          <div class="filter-error" id="filterError"></div>
+          <div class="filter-count" id="filterCount"></div>
+        </div>
+      </div>
     </div>
 
     <div class="section" id="configSection" style="display:none;">
@@ -752,15 +890,15 @@ body {
               <div class="splash-label">Example Datasets</div>
               <button class="example-btn" onclick="loadExample('ironore')">
                 <div class="ex-name">⛏ Iron Ore Domains</div>
-                <div class="ex-desc">Fe, SiO₂, depth, weathering → domain classification</div>
+                <div class="ex-desc">Fe, SiO₂, depth, weathering → domain <span style="opacity:0.5">(semicolon, comma-decimal)</span></div>
               </button>
               <button class="example-btn" onclick="loadExample('rocktype')">
                 <div class="ex-name">🪨 Rock Type (Geochemistry)</div>
-                <div class="ex-desc">Major oxides → basalt / andesite / dacite / rhyolite</div>
+                <div class="ex-desc">Major oxides → basalt / andesite / dacite / rhyolite <span style="opacity:0.5">(tab-delimited)</span></div>
               </button>
               <button class="example-btn" onclick="loadExample('iris')">
                 <div class="ex-name">🌺 Iris (Classic ML)</div>
-                <div class="ex-desc">Petal & sepal measurements → species</div>
+                <div class="ex-desc">Petal & sepal measurements → species <span style="opacity:0.5">(comma)</span></div>
               </button>
             </div>
             <div class="splash-section">
@@ -823,44 +961,140 @@ let DATA = null;
 let TREE = null;
 let selectedNodeId = null;
 let svgZoom = 1;
+let currentFilter = null; // { expr: string, fn: Function }
+let csvRawText = null; // raw CSV text for re-parsing
+let csvConfig = null; // { delimiter, decimalSep, detected: {...} }
 const CLASS_COLORS = [
   '#4caf50','#c9a227','#5aadad','#c45e5e','#8a7abf',
   '#bf8a5a','#5abf7a','#bf5a8a','#5a7abf','#afaf4c',
   '#7a5abf','#5abfbf','#bf5a5a','#8abf5a','#5a8abf'
 ];
 
+const NULL_SENTINELS = new Set([
+  '', 'NA', 'NaN', 'na', 'nan', 'N/A', 'n/a', 'null', 'NULL',
+  '*', '-', '-999', '-99', '-9999', '-99999',
+  '#N/A', 'VOID', 'void', 'None', 'none',
+  '-1.0e+32', '-1e+32', '1e+31'
+]);
+
 // ═══════════════════════════════════════
-//  CSV PARSING
+//  CSV PARSING (RFC 4180)
 // ═══════════════════════════════════════
-function parseCSV(text, delimiter) {
-  if (!delimiter) {
-    const firstLine = text.split('\n')[0];
-    delimiter = (firstLine.split('\t').length > firstLine.split(',').length) ? '\t' : ',';
+const DELIMITERS = [',', '\t', ';', '|', ' '];
+
+function detectDelimiter(lines) {
+  let best = ',', bestScore = -1;
+  for (const d of DELIMITERS) {
+    const counts = lines.map(l => splitCSVRow(l, d).length);
+    if (counts[0] < 2) continue;
+    const allSame = counts.every(c => c === counts[0]);
+    const score = allSame ? counts[0] * 1000 + counts.length : counts[0];
+    if (score > bestScore) { bestScore = score; best = d; }
   }
-  const lines = text.trim().split('\n').filter(l => l.trim());
-  const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
-  const rows = [];
-  for (let i = 1; i < lines.length; i++) {
-    const vals = lines[i].split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
-    if (vals.length === headers.length) {
-      const row = {};
-      headers.forEach((h, j) => { row[h] = vals[j]; });
-      rows.push(row);
-    }
-  }
-  const types = {};
-  headers.forEach(h => {
-    const sample = rows.slice(0, 50).map(r => r[h]).filter(v => v !== '' && v !== 'NA' && v !== 'null');
-    const allNumeric = sample.every(v => !isNaN(parseFloat(v)) && isFinite(v));
-    types[h] = allNumeric && sample.length > 0 ? 'numeric' : 'categorical';
-  });
-  return { headers, rows, types };
+  return best;
 }
 
-function loadData(csvText) {
-  DATA = parseCSV(csvText);
+function splitCSVRow(line, delimiter) {
+  // RFC 4180 compliant field splitting with quoted field support
+  const fields = [];
+  let i = 0, field = '', inQuote = false;
+  while (i < line.length) {
+    const c = line[i];
+    if (inQuote) {
+      if (c === '"') {
+        if (i + 1 < line.length && line[i + 1] === '"') {
+          field += '"'; i += 2; // escaped quote
+        } else {
+          inQuote = false; i++;
+        }
+      } else {
+        field += c; i++;
+      }
+    } else {
+      if (c === '"') {
+        inQuote = true; i++;
+      } else if (c === delimiter) {
+        fields.push(field); field = ''; i++;
+      } else {
+        field += c; i++;
+      }
+    }
+  }
+  fields.push(field);
+  return fields;
+}
+
+function parseCSV(text, config) {
+  config = config || {};
+  // Strip BOM
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim());
+  if (lines.length < 2) return { headers: [], rows: [], types: {}, missing: {} };
+
+  const detectedDelimiter = detectDelimiter(lines.slice(0, 20));
+  const delimiter = config.delimiter || detectedDelimiter;
+
+  const detectedDecimal = delimiter === ';' ? ',' : '.';
+  const decimalSep = config.decimalSep || detectedDecimal;
+  const commaDecimal = decimalSep === ',';
+
+  // Store detected + active values for config dialog
+  csvConfig = {
+    delimiter,
+    decimalSep,
+    detected: { delimiter: detectedDelimiter, decimalSep: detectedDecimal },
+  };
+
+  const headers = splitCSVRow(lines[0], delimiter).map(h => h.trim().replace(/^["']|["']$/g, ''));
+  const rows = [];
+  const missing = {};
+  headers.forEach(h => { missing[h] = 0; });
+
+  for (let i = 1; i < lines.length; i++) {
+    const vals = splitCSVRow(lines[i], delimiter);
+    if (vals.length !== headers.length) continue; // skip ragged rows
+    const row = {};
+    for (let j = 0; j < headers.length; j++) {
+      let v = vals[j].trim().replace(/^["']|["']$/g, '');
+      if (commaDecimal && v) v = v.replace(/,/g, '.');
+      if (NULL_SENTINELS.has(v)) {
+        row[headers[j]] = '';
+        missing[headers[j]]++;
+      } else {
+        row[headers[j]] = v;
+      }
+    }
+    rows.push(row);
+  }
+
+  // Type detection
+  const types = {};
+  headers.forEach(h => {
+    const sample = rows.slice(0, 100).map(r => r[h]).filter(v => v !== '');
+    const numCount = sample.filter(v => !isNaN(parseFloat(v)) && isFinite(v)).length;
+    const total = sample.length;
+    types[h] = (total > 0 && numCount / total > 0.8) ? 'numeric' : 'categorical';
+  });
+
+  return { headers, rows, types, missing, delimiter };
+}
+
+function getFilteredRows() {
+  if (!DATA) return [];
+  if (!currentFilter) return DATA.rows;
+  return DATA.rows.filter(r => {
+    try { return currentFilter.fn(r); } catch { return false; }
+  });
+}
+
+function loadData(csvText, config) {
+  csvRawText = csvText; // store for re-parsing
+  DATA = parseCSV(csvText, config);
   if (DATA.rows.length === 0) { alert('No data rows found.'); return; }
-  DATA._origTypes = { ...DATA.types }; // remember auto-detected types
+  DATA._origTypes = { ...DATA.types };
+  currentFilter = null;
+
   const sel = document.getElementById('targetSelect');
   sel.innerHTML = '';
   const cats = DATA.headers.filter(h => DATA.types[h] === 'categorical');
@@ -873,6 +1107,7 @@ function loadData(csvText) {
   });
   document.getElementById('configSection').style.display = '';
   document.getElementById('growBtn').disabled = false;
+  document.getElementById('csvConfigBtn').style.display = '';
   const statsBar = document.getElementById('statsBar');
   statsBar.style.display = '';
   statsBar.innerHTML = `
@@ -881,6 +1116,14 @@ function loadData(csvText) {
     <span>Numeric: <span class="stat-val">${nums.length}</span></span>
     <span>Categorical: <span class="stat-val">${cats.length}</span></span>
   `;
+
+  // Show filter section
+  document.getElementById('filterSection').style.display = '';
+  document.getElementById('filterInput').value = '';
+  document.getElementById('filterError').textContent = '';
+  document.getElementById('filterError').className = 'filter-error';
+  document.getElementById('filterCount').textContent = '';
+  initFilterAutocomplete();
 
   // Data summary in left panel
   const ds = document.getElementById('dataSummary');
@@ -893,17 +1136,23 @@ function renderDataSummary() {
   const ds = document.getElementById('dataSummary');
   const nums = DATA.headers.filter(h => DATA.types[h] === 'numeric');
   const cats = DATA.headers.filter(h => DATA.types[h] === 'categorical');
+  const totalMissing = Object.values(DATA.missing).reduce((a, b) => a + b, 0);
   let dsHtml = '<div class="data-summary">';
   dsHtml += `<div class="ds-row"><span class="ds-label">Rows</span><span class="ds-val">${DATA.rows.length}</span></div>`;
   dsHtml += `<div class="ds-row"><span class="ds-label">Columns</span><span class="ds-val">${DATA.headers.length}</span></div>`;
   dsHtml += `<div class="ds-row"><span class="ds-label">Numeric</span><span class="ds-val">${nums.length}</span></div>`;
   dsHtml += `<div class="ds-row"><span class="ds-label">Categorical</span><span class="ds-val">${cats.length}</span></div>`;
+  if (totalMissing > 0) {
+    dsHtml += `<div class="ds-row"><span class="ds-label" style="color:var(--amber)">Missing</span><span class="ds-val" style="color:var(--amber)">${totalMissing}</span></div>`;
+  }
   dsHtml += '<div class="ds-cols">';
   for (const h of DATA.headers) {
     const isNum = DATA.types[h] === 'numeric';
-    const canToggle = DATA._origTypes[h] === 'numeric'; // only originally-numeric cols can toggle
+    const canToggle = DATA._origTypes[h] === 'numeric';
+    const miss = DATA.missing[h] || 0;
+    const missTag = miss > 0 ? `<span style="color:var(--amber);font-size:0.48rem;" title="${miss} missing values">${miss}?</span>` : '';
     dsHtml += `<div class="ds-col">
-      <span class="ds-col-name">${h}</span>
+      <span class="ds-col-name">${h}</span>${missTag}
       <span class="ds-col-type${canToggle ? ' ds-col-toggle' : ''}"
         ${canToggle ? `onclick="toggleColType('${h.replace(/'/g, "\\'")}')" title="Click to toggle numeric ↔ categorical"` : `title="${isNum ? 'numeric' : 'categorical (text)'}"`}
       >${isNum ? 'num #' : 'cat ●'}</span>
@@ -931,6 +1180,376 @@ function toggleColType(col) {
   });
   if (DATA.headers.includes(prevTarget)) sel.value = prevTarget;
   showToast(`${col} → ${DATA.types[col]}`);
+}
+
+// ═══════════════════════════════════════
+//  ROW FILTER + EXPRESSION AUTOCOMPLETE
+// ═══════════════════════════════════════
+function fuzzyMatch(query, target) {
+  if (!query) return true;
+  let qi = 0;
+  for (let ti = 0; ti < target.length && qi < query.length; ti++) {
+    if (target[ti] === query[qi]) qi++;
+  }
+  return qi === query.length;
+}
+
+function safeColAccess(name) {
+  return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name) ? 'r.' + name : 'r["' + name.replace(/"/g, '\\"') + '"]';
+}
+
+function getTokenAtCursor(el) {
+  const pos = el.selectionStart;
+  const text = el.value.substring(0, pos);
+  const match = text.match(/(?:r\.)?([a-zA-Z_][a-zA-Z0-9_]*)$/);
+  if (!match) return { token: '', start: pos, hasPrefix: false, fullLen: 0 };
+  const full = match[0];
+  return { token: match[1], start: pos - full.length, hasPrefix: full.startsWith('r.'), fullLen: full.length };
+}
+
+function buildFilterAcItems() {
+  if (!DATA) return [];
+  const items = [];
+  for (const h of DATA.headers) {
+    const isNum = DATA.types[h] === 'numeric';
+    items.push({
+      label: h,
+      insert: safeColAccess(h),
+      kind: isNum ? 'num' : 'cat',
+      type: isNum ? '#' : '●'
+    });
+  }
+  return items;
+}
+
+let filterAcState = null;
+
+function initFilterAutocomplete() {
+  const input = document.getElementById('filterInput');
+  if (filterAcState) filterAcState.destroy();
+
+  let dropdown = document.getElementById('filterAcDropdown');
+  if (!dropdown) {
+    dropdown = document.createElement('div');
+    dropdown.className = 'expr-ac';
+    dropdown.id = 'filterAcDropdown';
+    input.parentElement.appendChild(dropdown);
+  }
+
+  let items = [], selected = -1;
+
+  function showAc() {
+    const tok = getTokenAtCursor(input);
+    if (!tok.token || tok.token.length < 1) { hideAc(); return; }
+    const lc = tok.token.toLowerCase();
+    items = buildFilterAcItems().filter(it =>
+      fuzzyMatch(lc, it.label.toLowerCase())
+    ).slice(0, 10);
+    if (items.length === 0) { hideAc(); return; }
+    selected = 0;
+    renderAc();
+    dropdown.classList.add('open');
+  }
+
+  function hideAc() {
+    dropdown.classList.remove('open');
+    items = []; selected = -1;
+  }
+
+  function renderAc() {
+    dropdown.innerHTML = items.map((it, i) => {
+      const cls = it.kind === 'num' ? 'ac-col-num' : 'ac-col-cat';
+      return `<div class="ac-item ${cls}${i === selected ? ' selected' : ''}" data-idx="${i}">
+        <span class="ac-label">${escHtml(it.label)}</span>
+        <span class="ac-type">${it.type}</span>
+      </div>`;
+    }).join('');
+    dropdown.querySelectorAll('.ac-item').forEach(el => {
+      el.addEventListener('mousedown', e => {
+        e.preventDefault();
+        acceptAc(parseInt(el.dataset.idx));
+      });
+    });
+  }
+
+  function acceptAc(idx) {
+    const item = items[idx];
+    if (!item) return;
+    const tok = getTokenAtCursor(input);
+    const before = input.value.substring(0, tok.start);
+    const after = input.value.substring(tok.start + tok.fullLen);
+    input.value = before + item.insert + after;
+    const newPos = before.length + item.insert.length;
+    input.setSelectionRange(newPos, newPos);
+    hideAc();
+    input.focus();
+    updateFilterCount();
+  }
+
+  function onInput() {
+    showAc();
+    updateFilterCount();
+  }
+  function onBlur() { setTimeout(hideAc, 150); }
+  function onKeydown(e) {
+    if (dropdown.classList.contains('open') && items.length > 0) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); selected = (selected + 1) % items.length; renderAc(); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); selected = (selected - 1 + items.length) % items.length; renderAc(); return; }
+      if (e.key === 'Tab' || (e.key === 'Enter' && selected >= 0)) { e.preventDefault(); acceptAc(selected); return; }
+      if (e.key === 'Escape') { hideAc(); return; }
+    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); applyFilter(); }
+  }
+
+  input.addEventListener('input', onInput);
+  input.addEventListener('blur', onBlur);
+  input.addEventListener('keydown', onKeydown);
+
+  filterAcState = {
+    destroy: () => {
+      input.removeEventListener('input', onInput);
+      input.removeEventListener('blur', onBlur);
+      input.removeEventListener('keydown', onKeydown);
+      hideAc();
+    }
+  };
+}
+
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function validateFilterExpr(expr) {
+  if (!expr.trim()) return { valid: true, error: null, warnings: [] };
+  try {
+    new Function('r', 'return !!(' + expr + ')');
+  } catch (e) {
+    return { valid: false, error: 'Syntax: ' + e.message, warnings: [] };
+  }
+  const warnings = [];
+  if (DATA) {
+    const known = new Set(DATA.headers);
+    const patterns = [/\br\.([a-zA-Z_]\w*)/g, /\br\["([^"]+)"\]/g, /\br\['([^']+)'\]/g];
+    const checked = new Set();
+    for (const pat of patterns) {
+      for (const m of expr.matchAll(pat)) {
+        if (!checked.has(m[1])) {
+          checked.add(m[1]);
+          if (!known.has(m[1])) warnings.push('Unknown: "' + m[1] + '"');
+        }
+      }
+    }
+  }
+  return { valid: true, error: null, warnings };
+}
+
+function updateFilterCount() {
+  const expr = document.getElementById('filterInput').value.trim();
+  const countEl = document.getElementById('filterCount');
+  const errEl = document.getElementById('filterError');
+  if (!expr || !DATA) {
+    countEl.textContent = '';
+    errEl.textContent = ''; errEl.className = 'filter-error';
+    return;
+  }
+  const result = validateFilterExpr(expr);
+  if (!result.valid) {
+    errEl.textContent = result.error;
+    errEl.className = 'filter-error active';
+    countEl.textContent = '';
+    return;
+  }
+  if (result.warnings.length) {
+    errEl.textContent = result.warnings.join('; ');
+    errEl.className = 'filter-error active warning';
+  } else {
+    errEl.textContent = ''; errEl.className = 'filter-error';
+  }
+  try {
+    const fn = new Function('r', 'try { return !!(' + expr + '); } catch(e) { return false; }');
+    const count = DATA.rows.filter(r => fn(r)).length;
+    countEl.innerHTML = `<span class="fc-active">${count}</span> / ${DATA.rows.length} rows`;
+  } catch {
+    countEl.textContent = '';
+  }
+}
+
+function applyFilter() {
+  const expr = document.getElementById('filterInput').value.trim();
+  const errEl = document.getElementById('filterError');
+  if (!expr) { clearFilter(); return; }
+  const result = validateFilterExpr(expr);
+  if (!result.valid) {
+    errEl.textContent = result.error;
+    errEl.className = 'filter-error active';
+    return;
+  }
+  try {
+    const fn = new Function('r', 'try { return !!(' + expr + '); } catch(e) { return false; }');
+    currentFilter = { expr, fn };
+    const count = getFilteredRows().length;
+    showToast(`Filter applied: ${count} / ${DATA.rows.length} rows`);
+    // If tree exists, regrow with filter
+    if (TREE) growTree();
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.className = 'filter-error active';
+  }
+}
+
+function clearFilter() {
+  currentFilter = null;
+  document.getElementById('filterInput').value = '';
+  document.getElementById('filterError').textContent = '';
+  document.getElementById('filterError').className = 'filter-error';
+  document.getElementById('filterCount').textContent = '';
+  showToast('Filter cleared');
+  if (TREE) growTree();
+}
+
+// ═══════════════════════════════════════
+//  CSV CONFIG DIALOG
+// ═══════════════════════════════════════
+const DELIM_LABELS = { ',': 'Comma (,)', '\t': 'Tab (⇥)', ';': 'Semicolon (;)', '|': 'Pipe (|)', ' ': 'Space ( )' };
+
+function showCSVConfig() {
+  if (!csvConfig || !csvRawText) return;
+  document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
+
+  const detected = csvConfig.detected;
+  const overlay = document.createElement('div');
+  overlay.className = 'load-dialog-overlay';
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+  const delimOptions = DELIMITERS.map(d => {
+    const label = DELIM_LABELS[d] || d;
+    const det = d === detected.delimiter ? ' (detected)' : '';
+    const sel = d === csvConfig.delimiter ? ' selected' : '';
+    return `<option value="${d === '\t' ? 'TAB' : d}"${sel}>${label}${det}</option>`;
+  }).join('') + '<option value="__custom__">Custom…</option>';
+
+  const decOptions = ['.', ','].map(d => {
+    const label = d === '.' ? 'Period (.)' : 'Comma (,)';
+    const det = d === detected.decimalSep ? ' (detected)' : '';
+    const sel = d === csvConfig.decimalSep ? ' selected' : '';
+    return `<option value="${d}"${sel}>${label}${det}</option>`;
+  }).join('');
+
+  // Preview: first 3 data rows parsed with current settings
+  const previewRows = DATA ? DATA.rows.slice(0, 3) : [];
+  const previewCols = DATA ? DATA.headers.slice(0, 5) : [];
+  const ellipsis = DATA && DATA.headers.length > 5 ? `<span style="color:var(--text-faint);font-size:0.5rem;">…+${DATA.headers.length - 5} more</span>` : '';
+
+  let previewHtml = '<div style="margin-top:0.6rem;border-top:1px solid var(--border);padding-top:0.5rem;">';
+  previewHtml += '<div style="font-family:var(--mono);font-size:0.52rem;color:var(--text-faint);margin-bottom:0.3rem;">PREVIEW (current parse) ' + ellipsis + '</div>';
+  previewHtml += '<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.52rem;">';
+  previewHtml += '<tr>' + previewCols.map(h => `<th style="text-align:left;padding:0.15rem 0.3rem;color:var(--cyan);border-bottom:1px solid var(--border);white-space:nowrap;">${escHtml(h)}</th>`).join('') + '</tr>';
+  for (const row of previewRows) {
+    previewHtml += '<tr>' + previewCols.map(h => {
+      const v = row[h];
+      const style = v === '' ? 'color:var(--amber);' : '';
+      return `<td style="padding:0.15rem 0.3rem;${style}white-space:nowrap;">${v === '' ? '—' : escHtml(v)}</td>`;
+    }).join('') + '</tr>';
+  }
+  previewHtml += '</table></div>';
+
+  overlay.innerHTML = `<div class="csv-config-dialog">
+    <h3>⚙ CSV Parsing</h3>
+    <div class="csv-cfg-row">
+      <label>Delimiter</label>
+      <select id="cfgDelimiter">${delimOptions}</select>
+    </div>
+    <div class="csv-cfg-row" id="cfgCustomDelimRow" style="display:none;">
+      <label>Custom</label>
+      <input type="text" id="cfgCustomDelim" maxlength="3" placeholder="e.g. ::" style="max-width:4rem;" />
+    </div>
+    <div class="csv-cfg-row">
+      <label>Decimal sep.</label>
+      <select id="cfgDecimalSep">${decOptions}</select>
+    </div>
+    <div id="csvConfigPreview">${previewHtml}</div>
+    <div class="csv-cfg-buttons">
+      <button class="csv-cfg-reset" onclick="resetCSVConfig()">↺ Auto-detect</button>
+      <button class="csv-cfg-cancel" onclick="this.closest('.load-dialog-overlay').remove()">Cancel</button>
+      <button class="csv-cfg-apply" onclick="applyCSVConfig()">Apply & Re-parse</button>
+    </div>
+  </div>`;
+
+  document.body.appendChild(overlay);
+
+  // Toggle custom delimiter row
+  const delimSel = document.getElementById('cfgDelimiter');
+  delimSel.addEventListener('change', () => {
+    document.getElementById('cfgCustomDelimRow').style.display =
+      delimSel.value === '__custom__' ? '' : 'none';
+    previewCSVConfig();
+  });
+  document.getElementById('cfgDecimalSep').addEventListener('change', previewCSVConfig);
+  document.getElementById('cfgCustomDelim').addEventListener('input', previewCSVConfig);
+}
+
+function getCSVConfigFromDialog() {
+  const delimVal = document.getElementById('cfgDelimiter').value;
+  let delimiter;
+  if (delimVal === '__custom__') {
+    delimiter = document.getElementById('cfgCustomDelim').value || ',';
+  } else if (delimVal === 'TAB') {
+    delimiter = '\t';
+  } else {
+    delimiter = delimVal;
+  }
+  const decimalSep = document.getElementById('cfgDecimalSep').value;
+  return { delimiter, decimalSep };
+}
+
+function previewCSVConfig() {
+  if (!csvRawText) return;
+  const config = getCSVConfigFromDialog();
+  const savedConfig = csvConfig; // preserve global
+  const preview = parseCSV(csvRawText, config);
+  csvConfig = savedConfig; // restore global
+  const previewEl = document.getElementById('csvConfigPreview');
+  if (!previewEl || preview.rows.length === 0) return;
+
+  const cols = preview.headers.slice(0, 5);
+  const rows = preview.rows.slice(0, 3);
+  const ellipsis = preview.headers.length > 5 ? `<span style="color:var(--text-faint);font-size:0.5rem;">…+${preview.headers.length - 5} more</span>` : '';
+
+  let html = '<div style="margin-top:0.6rem;border-top:1px solid var(--border);padding-top:0.5rem;">';
+  html += `<div style="font-family:var(--mono);font-size:0.52rem;color:var(--text-faint);margin-bottom:0.3rem;">PREVIEW (${preview.headers.length} cols × ${preview.rows.length} rows) ${ellipsis}</div>`;
+  html += '<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.52rem;">';
+  html += '<tr>' + cols.map(h => `<th style="text-align:left;padding:0.15rem 0.3rem;color:var(--cyan);border-bottom:1px solid var(--border);white-space:nowrap;">${escHtml(h)}</th>`).join('') + '</tr>';
+  for (const row of rows) {
+    html += '<tr>' + cols.map(h => {
+      const v = row[h];
+      const style = v === '' ? 'color:var(--amber);' : '';
+      return `<td style="padding:0.15rem 0.3rem;${style}white-space:nowrap;">${v === '' ? '—' : escHtml(v)}</td>`;
+    }).join('') + '</tr>';
+  }
+  html += '</table></div>';
+  previewEl.innerHTML = html;
+}
+
+function applyCSVConfig() {
+  const config = getCSVConfigFromDialog();
+  const prevTarget = document.getElementById('targetSelect').value;
+  TREE = null;
+  loadData(csvRawText, config);
+  // Try to restore target selection
+  if (DATA && DATA.headers.includes(prevTarget)) {
+    document.getElementById('targetSelect').value = prevTarget;
+  }
+  document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
+  showToast(`Re-parsed: ${DELIM_LABELS[config.delimiter] || config.delimiter}, decimal "${config.decimalSep}"`);
+}
+
+function resetCSVConfig() {
+  const prevTarget = document.getElementById('targetSelect').value;
+  TREE = null;
+  loadData(csvRawText); // no config = auto-detect
+  if (DATA && DATA.headers.includes(prevTarget)) {
+    document.getElementById('targetSelect').value = prevTarget;
+  }
+  document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
+  showToast('Re-parsed with auto-detected settings');
 }
 
 // ═══════════════════════════════════════
@@ -1158,7 +1777,8 @@ function growTree() {
   const minLeaf = parseInt(document.getElementById('minLeaf').value) || 5;
   const minSplit = parseInt(document.getElementById('minSplit').value) || 10;
   const features = DATA.headers.filter(h => h !== target);
-  const validRows = DATA.rows.filter(r => r[target] !== '' && r[target] !== 'NA' && r[target] !== 'null');
+  const allRows = getFilteredRows();
+  const validRows = allRows.filter(r => r[target] !== '' && r[target] !== 'NA' && r[target] !== 'null');
 
   // Detect mode from target column type
   TREE_MODE = DATA.types[target] === 'numeric' ? 'regression' : 'classification';
@@ -1180,6 +1800,7 @@ function growTree() {
   const metricLabel = TREE_MODE === 'regression' ? 'R²' : 'Accuracy';
   const metricVal = TREE_MODE === 'regression' ? metric.toFixed(3) : (metric * 100).toFixed(1) + '%';
 
+  const filterTag = currentFilter ? `<span style="color:var(--amber);">filtered</span>` : '';
   document.getElementById('statsBar').innerHTML = `
     <span>Rows: <span class="stat-val">${validRows.length}</span></span>
     <span>Nodes: <span class="stat-val">${stats.total}</span></span>
@@ -1187,6 +1808,7 @@ function growTree() {
     <span>Depth: <span class="stat-val">${stats.maxDepth}</span></span>
     <span>${metricLabel}: <span class="stat-val">${metricVal}</span></span>
     <span>Time: <span class="stat-val">${elapsed}ms</span></span>
+    ${filterTag}
   `;
 
   selectedNodeId = null;
@@ -2443,6 +3065,13 @@ function showHelp() {
     <p>Load a CSV (or use an example dataset), pick a target column, set tree parameters, and hit <code>🌱 Grow Tree</code>.
     Click nodes to inspect them, then use the bonsai tools to reshape the tree manually. Export the final rules.</p>
 
+    <h4>CSV Parsing</h4>
+    <p>Arborist auto-detects the delimiter (comma, tab, semicolon, pipe, space) and decimal separator. Semicolon-delimited files are assumed to use comma as the decimal separator (European/Brazilian convention). Click the <strong>⚙</strong> gear icon in the Data section header to override auto-detected settings — useful for pipe-delimited files, custom separators, or when detection gets it wrong. The config dialog shows a live preview of the parse result as you adjust settings.</p>
+    <p>Missing values — including <code>NA</code>, <code>NaN</code>, <code>null</code>, <code>-999</code>, <code>#N/A</code>, <code>*</code>, <code>-</code>, and others — are detected automatically and shown per-column in the data summary.</p>
+
+    <h4>Row Filter</h4>
+    <p>Below the data summary, the row filter lets you restrict the dataset using JavaScript expressions on a row object <code>r</code>. For example: <code>r.Fe_pct > 60 && r.weathering === 'oxide'</code>. Column names autocomplete as you type. The filter applies to both tree growing and CSV prediction export. Filters are saved with projects.</p>
+
     <h4>Classification vs Regression</h4>
     <p>Arborist auto-detects the mode from your target column. Categorical targets (text values) trigger <strong>classification</strong> using Gini impurity. Numeric targets trigger <strong>regression</strong> using variance reduction. The stats bar shows Accuracy or R² accordingly.</p>
 
@@ -2545,18 +3174,17 @@ Each step in this workshop has <span style="color:var(--green-bright)">green act
     title: '1 — Load Data',
     desc: `Every tree starts with data. Arborist accepts <strong>CSV files</strong> with a header row, or you can use one of the built-in example datasets.
 <br><br>
-Let's load the <strong>Iron Ore Domains</strong> dataset. This is a synthetic but realistic geometallurgical dataset with 200 samples containing:
+Let's load the <strong>Iron Ore Domains</strong> dataset — a synthetic but realistic geometallurgical dataset with 200 samples: iron grade, silica, alumina, depth, weathering state, and the target ore domain classification.
 <br><br>
-• <code>Fe_pct</code> — iron grade (%)
-<br>• <code>SiO2_pct</code> — silica content (%)
-<br>• <code>Al2O3_pct</code> — alumina content (%)
-<br>• <code>depth_m</code> — depth below surface (m)
-<br>• <code>weathering</code> — weathering state (fresh / oxide)
-<br>• <code>domain</code> — the target: ore type classification
+<strong>CSV format auto-detection:</strong> Arborist automatically detects the delimiter and decimal separator. The three example datasets each use a different format to demonstrate this:
 <br><br>
-The goal is to build a tree that predicts the <strong>domain</strong> from the other features. In real projects, these domains would define processing routes — different crusher settings, flotation circuits, or heap leach vs. mill feed decisions.
+• <strong>Iron Ore</strong> — semicolon delimited, comma decimal (Brazilian/European Excel export)
+<br>• <strong>Rock Type</strong> — tab delimited, period decimal (spreadsheet copy-paste)
+<br>• <strong>Iris</strong> — comma delimited, period decimal (standard CSV)
 <br><br>
-Click below to load the data. Arborist will auto-detect column types (numeric vs categorical), populate the configuration panel, set sensible defaults, and grow an initial tree.`,
+After loading, the <strong>⚙</strong> gear icon appears in the Data section header. Click it to open the <strong>CSV config dialog</strong> where you can override the auto-detected delimiter and decimal separator with a live preview. This is essential when auto-detection gets it wrong — e.g. pipe-delimited files, or files where semicolons appear inside fields.
+<br><br>
+Click below to load the iron ore data. Arborist will detect the semicolons and comma decimals, parse the data correctly, and grow an initial tree.`,
     actions: [{ label: '⛏ Load Iron Ore & Grow', fn: () => { loadExample('ironore'); setTimeout(zoomFit, 60); } }],
   },
   {
@@ -3354,9 +3982,10 @@ function exportCSVPredictions() {
   const isReg = TREE_MODE === 'regression';
   const predLabel = isReg ? 'predicted_value' : 'predicted_class';
   const confLabel = isReg ? 'std_dev' : 'confidence';
+  const rows = getFilteredRows();
   const headers = [...DATA.headers, predLabel, confLabel, 'leaf_id'];
   let csv = headers.join(',') + '\n';
-  for (const row of DATA.rows) {
+  for (const row of rows) {
     const pred = predictRow(TREE, row);
     const vals = DATA.headers.map(h => { const v = row[h]; return typeof v === 'string' && v.includes(',') ? `"${v}"` : v; });
     const predVal = isReg ? Number(pred.class).toFixed(3) : pred.class;
@@ -3386,7 +4015,7 @@ fileInput.addEventListener('change', e => { if (e.target.files[0]) readCSVFile(e
 
 function readCSVFile(file) {
   const reader = new FileReader();
-  reader.onload = e => { DATA._name = file.name.replace(/\.[^.]+$/, ''); loadData(e.target.result); showToast(`Loaded ${file.name}`); };
+  reader.onload = e => { const name = file.name.replace(/\.[^.]+$/, ''); loadData(e.target.result); if (DATA) DATA._name = name; showToast(`Loaded ${file.name}`); };
   reader.readAsText(file);
 }
 
@@ -3466,6 +4095,7 @@ function buildProjectPayload() {
       minSplit: document.getElementById('minSplit').value,
     },
     types: DATA ? { ...DATA.types } : {},
+    filter: currentFilter ? currentFilter.expr : null,
     csv: reconstructCSV(),
     tree: TREE ? serializeTree(TREE) : null,
     edits: undoStack.length,
@@ -3499,6 +4129,20 @@ function restoreProjectState(p) {
     document.getElementById('maxDepth').value = p.config.maxDepth;
     document.getElementById('minLeaf').value = p.config.minLeaf;
     document.getElementById('minSplit').value = p.config.minSplit;
+  }
+
+  // Restore filter
+  if (p.filter) {
+    document.getElementById('filterInput').value = p.filter;
+    try {
+      const fn = new Function('r', 'try { return !!(' + p.filter + '); } catch(e) { return false; }');
+      currentFilter = { expr: p.filter, fn };
+      updateFilterCount();
+    } catch { currentFilter = null; }
+  } else {
+    currentFilter = null;
+    document.getElementById('filterInput').value = '';
+    document.getElementById('filterCount').textContent = '';
   }
 
   if (p.tree) {
@@ -3790,7 +4434,9 @@ function generateIronOre() {
     }
     rows.push([depth.toFixed(1),fe.toFixed(1),sio2.toFixed(1),al2o3.toFixed(1),mn.toFixed(2),loi.toFixed(1),mag.toFixed(0),weathering,domain]);
   }
-  return 'depth_m,Fe_pct,SiO2_pct,Al2O3_pct,Mn_pct,LOI_pct,mag_sus,weathering,domain\n' + rows.map(r => r.join(',')).join('\n');
+  // Brazilian Excel style: semicolon delimiter, comma decimal
+  return 'depth_m;Fe_pct;SiO2_pct;Al2O3_pct;Mn_pct;LOI_pct;mag_sus;weathering;domain\n' +
+    rows.map(r => r.map(v => typeof v === 'string' && !isNaN(parseFloat(v)) ? v.replace('.', ',') : v).join(';')).join('\n');
 }
 
 function generateRockType() {
@@ -3810,7 +4456,8 @@ function generateRockType() {
     }
   }
   for (let i = rows.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [rows[i], rows[j]] = [rows[j], rows[i]]; }
-  return 'SiO2_pct,TiO2_pct,Al2O3_pct,Fe2O3_pct,MgO_pct,CaO_pct,Na2O_pct,K2O_pct,rock_type\n' + rows.map(r => r.join(',')).join('\n');
+  // Tab-delimited (common copy-paste from spreadsheets)
+  return 'SiO2_pct\tTiO2_pct\tAl2O3_pct\tFe2O3_pct\tMgO_pct\tCaO_pct\tNa2O_pct\tK2O_pct\trock_type\n' + rows.map(r => r.join('\t')).join('\n');
 }
 
 function generateIris() {
