@@ -217,6 +217,12 @@ body {
 }
 .file-btn:hover { border-color:var(--green); color:var(--text); }
 .file-btn .file-icon { font-size:0.75rem; }
+.leapfrog-btn {
+  width:100%; margin-top:0.4rem;
+  background:var(--green-dim); border:1px solid var(--green);
+  color:var(--green-bright); font-weight:600;
+}
+.leapfrog-btn:hover { background:var(--green); color:#111; }
 
 /* ── DATA SUMMARY ── */
 .data-summary {
@@ -451,6 +457,55 @@ body {
   background:var(--surface2); border:1px solid var(--border); color:var(--text-dim);
 }
 .sql-import-dialog .sid-cancel:hover { border-color:var(--text-dim); color:var(--text); }
+
+/* ── LEAPFROG EXPORT DIALOG ── */
+.lfcalc-dialog {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:1.2rem 1.4rem; width:460px; max-width:90vw;
+  max-height:85vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  scrollbar-width:thin; scrollbar-color:var(--border) transparent;
+}
+.lfcalc-dialog h3 {
+  font-family:var(--display); font-size:1rem; color:var(--text);
+  margin:0 0 0.3rem; font-weight:700;
+}
+.lf-hint {
+  font-family:var(--mono); font-size:0.58rem; color:var(--text-faint);
+  margin-bottom:0.8rem;
+}
+.lf-section {
+  font-family:var(--mono); font-size:0.58rem; font-weight:700;
+  color:var(--green-bright); text-transform:uppercase; letter-spacing:0.06em;
+  margin:0.8rem 0 0.3rem; padding-bottom:0.15rem;
+  border-bottom:1px solid var(--border);
+}
+.lf-var-row {
+  display:flex; align-items:center; gap:0.5rem; margin-bottom:0.35rem;
+}
+.lf-var-row label {
+  font-family:var(--mono); font-size:0.62rem; color:var(--text-dim);
+  min-width:120px; text-align:right; flex-shrink:0;
+}
+.lf-var-row input {
+  flex:1; padding:0.3rem 0.5rem; background:var(--bg); border:1px solid var(--border);
+  border-radius:4px; color:var(--text); font-family:var(--mono); font-size:0.62rem;
+}
+.lf-var-row input:focus { border-color:var(--green); outline:none; }
+.lf-buttons {
+  display:flex; gap:0.4rem; margin-top:0.8rem;
+}
+.lf-buttons button {
+  flex:1; padding:0.45rem; border-radius:4px; font-family:var(--mono);
+  font-size:0.68rem; cursor:pointer; transition:all 0.15s;
+}
+.lf-export {
+  background:var(--green); border:none; color:#111; font-weight:700;
+}
+.lf-export:hover { filter:brightness(1.15); }
+.lf-cancel {
+  background:var(--surface2); border:1px solid var(--border); color:var(--text-dim);
+}
+.lf-cancel:hover { border-color:var(--text-dim); color:var(--text); }
 
 /* ── HELP MODAL ── */
 .help-dialog {
@@ -696,6 +751,7 @@ body {
 .export-grid {
   display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.3rem; margin-top:0.5rem;
 }
+.export-grid-import { grid-template-columns:1fr; margin-top:0.25rem; }
 .export-btn {
   display:flex; align-items:center; justify-content:center; gap:0.25rem;
   padding:0.35rem 0.3rem; border:1px solid var(--border); border-radius:4px;
@@ -851,6 +907,9 @@ body {
         </button>
       </div>
       <input type="file" id="importInput" accept=".json" style="display:none" />
+      <button class="file-btn leapfrog-btn" onclick="showLfcalcDialog()" title="Export tree as Leapfrog .lfcalc file">
+        <span class="file-icon">🐸</span> Leapfrog .lfcalc
+      </button>
       <div id="savedProjectsList"></div>
     </div>
 
@@ -945,6 +1004,8 @@ body {
           <button class="export-btn" onclick="exportRules('excel')">📊 Excel IF</button>
           <button class="export-btn" onclick="exportRules('sql')">🗄 SQL CASE</button>
           <button class="export-btn" onclick="exportCSVPredictions()">📁 CSV</button>
+        </div>
+        <div class="export-grid export-grid-import">
           <button class="export-btn import-btn" onclick="showSQLImportDialog()">📥 Import SQL</button>
         </div>
       </div>
@@ -952,6 +1013,955 @@ body {
   </div>
 
 </div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     pollywog.js — Leapfrog .lfcalc builder (vendored, do not edit)
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<script>
+// pollywog.js — JavaScript port of pollywog core
+// Programmatically build, manipulate, and automate Leapfrog .lfcalc files
+// UMD module: works as <script> tag, CommonJS require(), or ES module adapter
+
+(function (root, factory) {
+  if (typeof define === "function" && define.amd) {
+    define([], factory);
+  } else if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.Pollywog = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  // ─── Constants ──────────────────────────────────────────────────────────────
+
+  var HEADER = new Uint8Array([
+    0x25, 0x6c, 0x66, 0x63, 0x61, 0x6c, 0x63, 0x2d, 0x31, 0x2e, 0x30, 0x0a,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  ]);
+
+  var ITEM_ORDER = { variable: 0, calculation: 1, filter: 2 };
+
+  // ─── Utilities ──────────────────────────────────────────────────────────────
+
+  function ensureList(x) {
+    return Array.isArray(x) ? x : [x];
+  }
+
+  function ensureStrList(x) {
+    var arr = Array.isArray(x) ? x.slice() : [x];
+    if (typeof arr[0] !== "string") arr.unshift("");
+    if (typeof arr[arr.length - 1] !== "string") arr.push("");
+    return arr;
+  }
+
+  function isNumber(v) {
+    if (v === null || v === undefined || v === "" || typeof v === "boolean")
+      return false;
+    return !isNaN(Number(v));
+  }
+
+  function hasFunctionCall(v) {
+    if (typeof v !== "string") return false;
+    return /\b\w+\s*\(.*\)/.test(v);
+  }
+
+  function ensureBrackets(v, ignoreFunctions) {
+    v = v.trim();
+    if (ignoreFunctions && hasFunctionCall(v)) return v;
+    if (!(v.startsWith("[") && v.endsWith("]"))) v = "[" + v + "]";
+    return v;
+  }
+
+  function ensureVariables(variables, ignoreFunctions) {
+    return ensureList(variables).map(function (v) {
+      if (isNumber(v)) return String(v);
+      return ensureBrackets(v, ignoreFunctions);
+    });
+  }
+
+  function toDict(items, guardStrings) {
+    var out = ensureList(items).map(function (item) {
+      return item && typeof item.toDict === "function" ? item.toDict() : item;
+    });
+    if (guardStrings) {
+      if (typeof out[0] !== "string") out.unshift("");
+      if (typeof out[out.length - 1] !== "string") out.push("");
+    }
+    return out;
+  }
+
+  // ─── getDependencies ────────────────────────────────────────────────────────
+
+  function getDependencies(item) {
+    var deps = new Set();
+    if (item instanceof Item) {
+      item.expression.forEach(function (child) {
+        getDependencies(child).forEach(function (d) {
+          deps.add(d);
+        });
+      });
+    } else if (item instanceof If) {
+      item.rows.forEach(function (row) {
+        getDependencies(row).forEach(function (d) {
+          deps.add(d);
+        });
+      });
+      getDependencies(item.otherwise).forEach(function (d) {
+        deps.add(d);
+      });
+    } else if (item instanceof IfRow) {
+      getDependencies(item.condition).forEach(function (d) {
+        deps.add(d);
+      });
+      getDependencies(item.value).forEach(function (d) {
+        deps.add(d);
+      });
+    } else if (Array.isArray(item)) {
+      item.forEach(function (elem) {
+        getDependencies(elem).forEach(function (d) {
+          deps.add(d);
+        });
+      });
+    } else if (typeof item === "string") {
+      var re = /\[([^\[\]]+)\]/g;
+      var match;
+      while ((match = re.exec(item)) !== null) {
+        deps.add(match[1]);
+      }
+    }
+    return deps;
+  }
+
+  // ─── dispatchExpression ─────────────────────────────────────────────────────
+
+  function dispatchExpression(data) {
+    if (data && typeof data === "object" && !Array.isArray(data) && data.type) {
+      if (EXPRESSIONS[data.type]) {
+        return EXPRESSIONS[data.type].fromDict(data);
+      }
+      throw new Error("Unknown expression type: " + data.type);
+    }
+    return data;
+  }
+
+  // ─── rename ─────────────────────────────────────────────────────────────────
+
+  function rename(item, mapper, regex) {
+    if (item instanceof Item) {
+      var newExpression = item.expression.map(function (child) {
+        return rename(child, mapper, regex);
+      });
+      return item.replace({ expression: newExpression });
+    } else if (item instanceof If) {
+      var newRows = item.rows.map(function (row) {
+        return rename(row, mapper, regex);
+      });
+      var newOtherwise = rename(item.otherwise, mapper, regex);
+      return new If(newRows, newOtherwise);
+    } else if (item instanceof IfRow) {
+      var newCondition = rename(item.condition, mapper, regex);
+      var newValue = rename(item.value, mapper, regex);
+      return new IfRow(newCondition, newValue);
+    } else if (Array.isArray(item)) {
+      return item.map(function (elem) {
+        return rename(elem, mapper, regex);
+      });
+    } else if (typeof item === "string") {
+      return item.replace(/\[([^\[\]]+)\]/g, function (full, varName) {
+        if (typeof mapper === "function") {
+          return "[" + mapper(varName) + "]";
+        } else if (regex) {
+          Object.keys(mapper).forEach(function (pattern) {
+            varName = varName.replace(new RegExp(pattern, "g"), mapper[pattern]);
+          });
+          return "[" + varName + "]";
+        } else {
+          return "[" + (mapper[varName] !== undefined ? mapper[varName] : varName) + "]";
+        }
+      });
+    }
+    return item;
+  }
+
+  // ─── IfRow ──────────────────────────────────────────────────────────────────
+
+  function IfRow(condition, value) {
+    if (!(this instanceof IfRow)) return new IfRow(condition, value);
+    this.condition = condition;
+    this.value = value;
+  }
+
+  IfRow.prototype.toDict = function () {
+    return {
+      type: "if_row",
+      test: { type: "list", children: toDict(this.condition) },
+      result: { type: "list", children: toDict(this.value, true) },
+    };
+  };
+
+  IfRow.fromDict = function (data) {
+    if (data.type !== "if_row")
+      throw new Error("Expected type 'if_row', got " + data.type);
+    var condition = ensureList(data.test.children).map(dispatchExpression);
+    var value = ensureStrList(data.result.children).map(dispatchExpression);
+    return new IfRow(condition, value);
+  };
+
+  IfRow.prototype.copy = function () {
+    return new IfRow(
+      this.condition.map(function (c) {
+        return c && typeof c.copy === "function" ? c.copy() : c;
+      }),
+      this.value.map(function (v) {
+        return v && typeof v.copy === "function" ? v.copy() : v;
+      })
+    );
+  };
+
+  // ─── If ─────────────────────────────────────────────────────────────────────
+
+  function If(a, b, c) {
+    if (!(this instanceof If)) return new If(a, b, c);
+    var rows, otherwise;
+    if (arguments.length === 3) {
+      // 3-arg mode: If(condition, then, otherwise)
+      rows = [[a, b]];
+      otherwise = c;
+    } else if (arguments.length === 2) {
+      // 2-arg mode: If(rows, otherwise)
+      rows = a;
+      otherwise = b;
+    } else {
+      throw new Error(
+        "If must be initialized with either (rows, otherwise) or (condition, then, otherwise)"
+      );
+    }
+
+    var ifrows = [];
+    ensureList(rows).forEach(function (row) {
+      if (row instanceof IfRow) {
+        ifrows.push(row);
+      } else if (
+        row &&
+        typeof row === "object" &&
+        !Array.isArray(row) &&
+        row.type === "if_row"
+      ) {
+        ifrows.push(IfRow.fromDict(row));
+      } else if (Array.isArray(row) && row.length === 2) {
+        ifrows.push(new IfRow(row[0], row[1]));
+      } else {
+        throw new Error("Invalid row format");
+      }
+    });
+    this.rows = ifrows;
+    this.otherwise = otherwise;
+  }
+
+  If.prototype.toDict = function () {
+    return {
+      type: "if",
+      rows: this.rows.map(function (r) {
+        return r.toDict();
+      }),
+      otherwise: { type: "list", children: toDict(this.otherwise, true) },
+    };
+  };
+
+  If.fromDict = function (data) {
+    if (data.type !== "if")
+      throw new Error("Expected type 'if', got " + data.type);
+    var rows = ensureList(data.rows).map(function (row) {
+      return row instanceof IfRow
+        ? row
+        : typeof row === "object" && row.type === "if_row"
+          ? IfRow.fromDict(row)
+          : row;
+    });
+    var otherwise = ensureStrList(data.otherwise.children).map(
+      dispatchExpression
+    );
+    return new If(rows, otherwise);
+  };
+
+  If.prototype.copy = function () {
+    return new If(
+      this.rows.map(function (r) {
+        return r && typeof r.copy === "function" ? r.copy() : r;
+      }),
+      this.otherwise.map(function (o) {
+        return o && typeof o.copy === "function" ? o.copy() : o;
+      })
+    );
+  };
+
+  // ─── Item (base class) ─────────────────────────────────────────────────────
+
+  function Item(name, expression, commentItem, commentEquation) {
+    if (!(this instanceof Item)) return new Item(name, expression, commentItem, commentEquation);
+    this.name = name || "";
+    this.expression = expression == null ? [] : ensureList(expression);
+    this.commentItem = commentItem || "";
+    this.commentEquation = commentEquation || "";
+  }
+
+  Item.prototype.itemType = null;
+  Item.prototype.calculationType = null;
+
+  Item.prototype.toDict = function () {
+    if (this.itemType === null)
+      throw new Error("itemType must be defined in subclass");
+    var children = toDict(this.expression, true);
+    var item = {
+      type: this.itemType,
+      name: this.name,
+      equation: {
+        type: "equation",
+        comment: this.commentEquation,
+        statement: { type: "list", children: children },
+      },
+      comment: this.commentItem,
+    };
+    if (this.calculationType) item.calculation_type = this.calculationType;
+    return item;
+  };
+
+  Item._fromDict = function (Constructor, data) {
+    if (Constructor.prototype.itemType !== null && data.type !== Constructor.prototype.itemType)
+      throw new Error(
+        "Expected item type " + Constructor.prototype.itemType + ", got " + data.type
+      );
+    var expression = ensureList(
+      data.equation.statement.children
+    ).map(dispatchExpression);
+    return new Constructor(
+      data.name,
+      expression,
+      data.comment || "",
+      (data.equation && data.equation.comment) || ""
+    );
+  };
+
+  Object.defineProperty(Item.prototype, "dependencies", {
+    get: function () {
+      return getDependencies(this);
+    },
+  });
+
+  Item.prototype.copy = function () {
+    var Ctor = this.constructor;
+    return new Ctor(
+      this.name,
+      this.expression.map(function (c) {
+        return c && typeof c.copy === "function" ? c.copy() : c;
+      }),
+      this.commentItem,
+      this.commentEquation
+    );
+  };
+
+  Item.prototype.replace = function (changes) {
+    var Ctor = this.constructor;
+    return new Ctor(
+      changes.name !== undefined ? changes.name : this.name,
+      changes.expression !== undefined ? changes.expression : this.expression,
+      changes.commentItem !== undefined ? changes.commentItem : this.commentItem,
+      changes.commentEquation !== undefined
+        ? changes.commentEquation
+        : this.commentEquation
+    );
+  };
+
+  Item.prototype.rename = function (name, variables, regex) {
+    var newItem = this.copy();
+    if (name !== undefined && name !== null) {
+      newItem.name = name;
+    } else if (variables != null) {
+      var varName = newItem.name;
+      if (typeof variables === "function") {
+        var newVarName = variables(varName);
+        if (newVarName != null) newItem.name = newVarName;
+      } else if (regex) {
+        Object.keys(variables).forEach(function (pattern) {
+          var result = varName.replace(new RegExp(pattern, "g"), variables[pattern]);
+          if (result !== varName) varName = result;
+        });
+        newItem.name = varName;
+      } else {
+        if (variables[varName] !== undefined) newItem.name = variables[varName];
+      }
+    }
+    if (variables != null) {
+      return rename(newItem, variables, regex);
+    }
+    return newItem;
+  };
+
+  // ─── NumberCalc ─────────────────────────────────────────────────────────────
+
+  function NumberCalc(name, expression, commentItem, commentEquation) {
+    if (!(this instanceof NumberCalc))
+      return new NumberCalc(name, expression, commentItem, commentEquation);
+    Item.call(this, name, expression, commentItem, commentEquation);
+  }
+  NumberCalc.prototype = Object.create(Item.prototype);
+  NumberCalc.prototype.constructor = NumberCalc;
+  NumberCalc.prototype.itemType = "calculation";
+  NumberCalc.prototype.calculationType = "number";
+  NumberCalc.fromDict = function (data) {
+    return Item._fromDict(NumberCalc, data);
+  };
+
+  // ─── Category ───────────────────────────────────────────────────────────────
+
+  function Category(name, expression, commentItem, commentEquation) {
+    if (!(this instanceof Category))
+      return new Category(name, expression, commentItem, commentEquation);
+    Item.call(this, name, expression, commentItem, commentEquation);
+  }
+  Category.prototype = Object.create(Item.prototype);
+  Category.prototype.constructor = Category;
+  Category.prototype.itemType = "calculation";
+  Category.prototype.calculationType = "string";
+  Category.fromDict = function (data) {
+    return Item._fromDict(Category, data);
+  };
+
+  // ─── Variable ───────────────────────────────────────────────────────────────
+
+  function Variable(name, expression, commentItem, commentEquation) {
+    if (!(this instanceof Variable))
+      return new Variable(name, expression, commentItem, commentEquation);
+    Item.call(this, name, expression, commentItem, commentEquation);
+  }
+  Variable.prototype = Object.create(Item.prototype);
+  Variable.prototype.constructor = Variable;
+  Variable.prototype.itemType = "variable";
+  Variable.fromDict = function (data) {
+    return Item._fromDict(Variable, data);
+  };
+
+  // ─── Filter ─────────────────────────────────────────────────────────────────
+
+  function Filter(name, expression, commentItem, commentEquation) {
+    if (!(this instanceof Filter))
+      return new Filter(name, expression, commentItem, commentEquation);
+    Item.call(this, name, expression, commentItem, commentEquation);
+  }
+  Filter.prototype = Object.create(Item.prototype);
+  Filter.prototype.constructor = Filter;
+  Filter.prototype.itemType = "filter";
+  Filter.fromDict = function (data) {
+    return Item._fromDict(Filter, data);
+  };
+
+  // ─── Class registries ──────────────────────────────────────────────────────
+
+  var CLASSES = {
+    variable: Variable,
+    filter: Filter,
+    if: If,
+    if_row: IfRow,
+  };
+
+  var EXPRESSIONS = {
+    if: If,
+  };
+
+  // ─── CalcSet ────────────────────────────────────────────────────────────────
+
+  function CalcSet(items) {
+    if (!(this instanceof CalcSet)) return new CalcSet(items);
+    this.items = items == null ? [] : ensureList(items);
+  }
+
+  CalcSet.prototype.copy = function () {
+    return new CalcSet(
+      this.items.map(function (item) {
+        return item.copy();
+      })
+    );
+  };
+
+  CalcSet.prototype.get = function (name) {
+    for (var i = 0; i < this.items.length; i++) {
+      if (this.items[i].name === name) return this.items[i];
+    }
+    throw new Error("Item with name '" + name + "' not found.");
+  };
+
+  CalcSet.prototype.topologicalSort = function () {
+    var itemsByName = {};
+    this.items.forEach(function (item) {
+      if (item.name) itemsByName[item.name] = item;
+    });
+    var sorted = [];
+    var visited = new Set();
+    var tempMark = new Set();
+
+    function visit(item) {
+      if (visited.has(item.name)) return;
+      if (tempMark.has(item.name))
+        throw new Error(
+          "Cyclic dependency detected involving '" + item.name + "'"
+        );
+      tempMark.add(item.name);
+      var deps = getDependencies(item);
+      deps.forEach(function (dep) {
+        if (itemsByName[dep]) visit(itemsByName[dep]);
+      });
+      tempMark.delete(item.name);
+      visited.add(item.name);
+      sorted.push(item);
+    }
+
+    this.items.forEach(function (item) {
+      visit(item);
+    });
+    var unnamed = this.items.filter(function (item) {
+      return !item.name;
+    });
+    sorted.push.apply(sorted, unnamed);
+    return new CalcSet(sorted);
+  };
+
+  CalcSet.prototype.toDict = function (sortItems) {
+    if (sortItems === undefined) sortItems = true;
+    var items = toDict(this.items);
+    if (sortItems) {
+      items.sort(function (a, b) {
+        var oa = ITEM_ORDER[a.type] !== undefined ? ITEM_ORDER[a.type] : 99;
+        var ob = ITEM_ORDER[b.type] !== undefined ? ITEM_ORDER[b.type] : 99;
+        return oa - ob;
+      });
+    }
+    return { type: "calculation-set", items: items };
+  };
+
+  CalcSet.fromDict = function (data) {
+    if (data.type !== "calculation-set")
+      throw new Error(
+        "Expected type 'calculation-set', got " + data.type
+      );
+    var items = [];
+    data.items.forEach(function (item) {
+      var itemType = item.type;
+      if (CLASSES[itemType]) {
+        items.push(CLASSES[itemType].fromDict(item));
+      } else if (itemType === "calculation") {
+        if (item.calculation_type === "number") {
+          items.push(NumberCalc.fromDict(item));
+        } else if (item.calculation_type === "string") {
+          items.push(Category.fromDict(item));
+        } else {
+          throw new Error(
+            "Unknown calculation type: " + item.calculation_type
+          );
+        }
+      } else {
+        throw new Error("Unknown item type: " + itemType);
+      }
+    });
+    return new CalcSet(items);
+  };
+
+  CalcSet.prototype.toJSON = function (sortItems, indent) {
+    if (sortItems === undefined) sortItems = true;
+    if (indent === undefined) indent = 0;
+    return indent
+      ? JSON.stringify(this.toDict(sortItems), null, indent)
+      : JSON.stringify(this.toDict(sortItems));
+  };
+
+  CalcSet.prototype.rename = function (items, variables, regex) {
+    var newItems = [];
+    this.items.forEach(function (item) {
+      var name = item.name;
+      // Rename item names
+      if (items != null) {
+        if (typeof items === "function") {
+          var newName = items(name);
+          if (newName != null) name = newName;
+        } else if (regex) {
+          Object.keys(items).forEach(function (pattern) {
+            var result = name.replace(new RegExp(pattern, "g"), items[pattern]);
+            if (result !== name) name = result;
+          });
+        } else {
+          if (items[name] !== undefined) name = items[name];
+        }
+      }
+      // Rename item name using variables mapping
+      var varName = name;
+      if (variables != null && item instanceof Item) {
+        if (typeof variables === "function") {
+          var newVarName = variables(varName);
+          if (newVarName != null) varName = newVarName;
+        } else if (regex) {
+          Object.keys(variables).forEach(function (pattern) {
+            var result = varName.replace(
+              new RegExp(pattern, "g"),
+              variables[pattern]
+            );
+            if (result !== varName) varName = result;
+          });
+        } else {
+          if (variables[varName] !== undefined) varName = variables[varName];
+        }
+      }
+      var finalName = item instanceof Item ? varName : name;
+      newItems.push(item.rename(finalName, variables, regex));
+    });
+    return new CalcSet(newItems);
+  };
+
+  // ─── Compression helpers ────────────────────────────────────────────────────
+
+  var _isNode =
+    typeof process !== "undefined" &&
+    process.versions != null &&
+    process.versions.node != null;
+
+  function zlibCompress(data) {
+    if (_isNode) {
+      var zlib = require("zlib");
+      return Promise.resolve(zlib.deflateSync(Buffer.from(data)));
+    }
+    // Browser: CompressionStream
+    var blob = new Blob([data]);
+    var cs = new CompressionStream("deflate");
+    var stream = blob.stream().pipeThrough(cs);
+    return new Response(stream).arrayBuffer().then(function (buf) {
+      return new Uint8Array(buf);
+    });
+  }
+
+  function zlibDecompress(data) {
+    if (_isNode) {
+      var zlib = require("zlib");
+      return Promise.resolve(zlib.inflateSync(Buffer.from(data)));
+    }
+    // Browser: DecompressionStream
+    var blob = new Blob([data]);
+    var ds = new DecompressionStream("deflate");
+    var stream = blob.stream().pipeThrough(ds);
+    return new Response(stream).arrayBuffer().then(function (buf) {
+      return new Uint8Array(buf);
+    });
+  }
+
+  // ─── CalcSet I/O ────────────────────────────────────────────────────────────
+
+  CalcSet.prototype.toLfcalc = function (sortItems) {
+    if (sortItems === undefined) sortItems = true;
+    var jsonStr = this.toJSON(sortItems);
+    var encoded = new TextEncoder().encode(jsonStr);
+    return zlibCompress(encoded).then(function (compressed) {
+      var result = new Uint8Array(HEADER.length + compressed.length);
+      result.set(HEADER, 0);
+      result.set(new Uint8Array(compressed), HEADER.length);
+      return result;
+    });
+  };
+
+  CalcSet.readLfcalc = function (buffer) {
+    var bytes =
+      buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+    var compressed = bytes.slice(HEADER.length);
+    return zlibDecompress(compressed).then(function (decompressed) {
+      var jsonStr = new TextDecoder().decode(decompressed);
+      var data = JSON.parse(jsonStr);
+      return CalcSet.fromDict(data);
+    });
+  };
+
+  // Browser convenience: read from File object
+  CalcSet.readLfcalcFile = function (file) {
+    return file.arrayBuffer().then(function (buf) {
+      return CalcSet.readLfcalc(buf);
+    });
+  };
+
+  // Browser convenience: download as .lfcalc
+  CalcSet.prototype.toLfcalcBlob = function (sortItems) {
+    return this.toLfcalc(sortItems).then(function (bytes) {
+      return new Blob([bytes], { type: "application/octet-stream" });
+    });
+  };
+
+  CalcSet.prototype.downloadLfcalc = function (filename, sortItems) {
+    if (!filename) filename = "calcset.lfcalc";
+    return this.toLfcalcBlob(sortItems).then(function (blob) {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  };
+
+  // Node.js convenience: write to file path
+  CalcSet.prototype.writeLfcalc = function (filepath, sortItems) {
+    if (!_isNode)
+      return Promise.reject(new Error("writeLfcalc is only available in Node.js"));
+    var fs = require("fs");
+    return this.toLfcalc(sortItems).then(function (bytes) {
+      fs.writeFileSync(filepath, Buffer.from(bytes));
+    });
+  };
+
+  // Node.js convenience: read from file path
+  CalcSet.readLfcalcPath = function (filepath) {
+    if (!_isNode)
+      return Promise.reject(new Error("readLfcalcPath is only available in Node.js"));
+    var fs = require("fs");
+    var buf = fs.readFileSync(filepath);
+    return CalcSet.readLfcalc(buf);
+  };
+
+  // ─── Helpers ────────────────────────────────────────────────────────────────
+
+  function Sum(variables, opts) {
+    opts = opts || {};
+    if (!variables || variables.length === 0)
+      throw new Error("At least one variable must be provided.");
+    var ignoreFunctions =
+      opts.ignoreFunctions !== undefined ? opts.ignoreFunctions : true;
+    var vars = ensureVariables(variables, ignoreFunctions);
+    var expr = "(" + vars.join(" + ") + ")";
+    if (opts.name == null) return expr;
+    return new NumberCalc(
+      opts.name,
+      [expr],
+      "",
+      opts.comment || "Sum of " + vars.join(", ")
+    );
+  }
+
+  function Product(variables, opts) {
+    opts = opts || {};
+    if (!variables || variables.length === 0)
+      throw new Error("At least one variable must be provided.");
+    var ignoreFunctions =
+      opts.ignoreFunctions !== undefined ? opts.ignoreFunctions : true;
+    var vars = ensureVariables(variables, ignoreFunctions);
+    var expr = "(" + vars.join(" * ") + ")";
+    if (opts.name == null) return expr;
+    return new NumberCalc(
+      opts.name,
+      [expr],
+      "",
+      opts.comment || "Product of " + vars.join(", ")
+    );
+  }
+
+  function Average(variables, opts) {
+    opts = opts || {};
+    if (!variables || variables.length === 0)
+      throw new Error("At least one variable must be provided.");
+    var ignoreFunctions =
+      opts.ignoreFunctions !== undefined ? opts.ignoreFunctions : true;
+    var vars = ensureVariables(variables, ignoreFunctions);
+    var expr = "(" + vars.join(" + ") + ") / " + vars.length;
+    if (opts.name == null) return expr;
+    return new NumberCalc(
+      opts.name,
+      [expr],
+      "",
+      opts.comment || "Average of " + vars.join(", ")
+    );
+  }
+
+  function WeightedSum(variables, weights, opts) {
+    opts = opts || {};
+    if (
+      !variables ||
+      !weights ||
+      variables.length === 0 ||
+      variables.length !== weights.length
+    )
+      throw new Error(
+        "variables and weights must be non-empty and of equal length."
+      );
+    var ignoreFunctions =
+      opts.ignoreFunctions !== undefined ? opts.ignoreFunctions : true;
+    var ws = ensureVariables(weights, ignoreFunctions);
+    var vars = ensureVariables(variables, ignoreFunctions);
+    var terms = vars.map(function (v, i) {
+      return v + " * " + ws[i];
+    });
+    var expr = "(" + terms.join(" + ") + ")";
+    if (opts.name == null) return expr;
+    return new NumberCalc(
+      opts.name,
+      [expr],
+      "",
+      opts.comment ||
+        "Weighted sum of " + vars.join(", ") + " with weights " + ws.join(", ")
+    );
+  }
+
+  function WeightedAverage(variables, weights, opts) {
+    opts = opts || {};
+    if (
+      !variables ||
+      !weights ||
+      variables.length === 0 ||
+      variables.length !== weights.length
+    )
+      throw new Error(
+        "variables and weights must be non-empty and of equal length."
+      );
+    var ignoreFunctions =
+      opts.ignoreFunctions !== undefined ? opts.ignoreFunctions : true;
+    var ws = ensureVariables(weights, ignoreFunctions);
+    var vars = ensureVariables(variables, ignoreFunctions);
+    var sumWeights = ws.join(" + ");
+    var terms = vars.map(function (v, i) {
+      return v + " * " + ws[i];
+    });
+    var expr = "(" + terms.join(" + ") + ") / (" + sumWeights + ")";
+    if (opts.name == null) return expr;
+    return new NumberCalc(
+      opts.name,
+      [expr],
+      "",
+      opts.comment ||
+        "Weighted average of " +
+          vars.join(", ") +
+          " with weights " +
+          ws.join(", ")
+    );
+  }
+
+  function Normalize(variable, minValue, maxValue, opts) {
+    opts = opts || {};
+    var ignoreFunctions =
+      opts.ignoreFunctions !== undefined ? opts.ignoreFunctions : true;
+    var v = ensureBrackets(variable, ignoreFunctions);
+    var expr =
+      "(" + v + " - " + minValue + ") / (" + maxValue + " - " + minValue + ")";
+    if (opts.name == null) return expr;
+    return new NumberCalc(
+      opts.name,
+      [expr],
+      "",
+      opts.comment ||
+        "Normalize " +
+          v +
+          " to [0, 1] using min=" +
+          minValue +
+          ", max=" +
+          maxValue
+    );
+  }
+
+  function Scale(variable, factor, opts) {
+    opts = opts || {};
+    var factorExpr =
+      typeof factor === "string" ? "[" + factor + "]" : String(factor);
+    var expr = "[" + variable + "] * " + factorExpr;
+    if (opts.name == null) return expr;
+    return new NumberCalc(
+      opts.name,
+      [expr],
+      "",
+      opts.comment || "Scale " + variable + " by " + factor
+    );
+  }
+
+  function CategoryFromThresholds(variable, thresholds, categories, opts) {
+    opts = opts || {};
+    if (categories.length !== thresholds.length + 1)
+      throw new Error(
+        "categories must have one more element than thresholds"
+      );
+    var ignoreFunctions =
+      opts.ignoreFunctions !== undefined ? opts.ignoreFunctions : true;
+    var baseVariable = variable;
+    var v = ensureBrackets(variable, ignoreFunctions);
+    var rows = [];
+    var prev = null;
+    for (var i = 0; i < thresholds.length; i++) {
+      var cond;
+      if (prev === null) {
+        cond = v + " <= " + thresholds[i];
+      } else {
+        cond =
+          "(" +
+          v +
+          " > " +
+          prev +
+          ") and (" +
+          v +
+          " <= " +
+          thresholds[i] +
+          ")";
+      }
+      rows.push(new IfRow([cond], [categories[i]]));
+      prev = thresholds[i];
+    }
+    var otherwise = [categories[categories.length - 1]];
+    var ifBlock = new If(rows, otherwise);
+    if (opts.name == null) return ifBlock;
+    return new Category(
+      opts.name,
+      [ifBlock],
+      "",
+      opts.comment ||
+        "Classify " + baseVariable + " by thresholds " + JSON.stringify(thresholds)
+    );
+  }
+
+  // ─── Exports ────────────────────────────────────────────────────────────────
+
+  return {
+    // Constants
+    HEADER: HEADER,
+    ITEM_ORDER: ITEM_ORDER,
+
+    // Classes
+    CalcSet: CalcSet,
+    Number: NumberCalc,
+    NumberCalc: NumberCalc,
+    Category: Category,
+    Variable: Variable,
+    Filter: Filter,
+    If: If,
+    IfRow: IfRow,
+    Item: Item,
+
+    // Helpers
+    Sum: Sum,
+    Product: Product,
+    Average: Average,
+    WeightedSum: WeightedSum,
+    WeightedAverage: WeightedAverage,
+    Normalize: Normalize,
+    Scale: Scale,
+    CategoryFromThresholds: CategoryFromThresholds,
+
+    // Utilities
+    getDependencies: getDependencies,
+    ensureList: ensureList,
+    ensureStrList: ensureStrList,
+    ensureVariables: ensureVariables,
+    ensureBrackets: ensureBrackets,
+    isNumber: isNumber,
+    hasFunctionCall: hasFunctionCall,
+    toDict: toDict,
+    rename: rename,
+  };
+});
+</script>
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     end pollywog.js
+     ═══════════════════════════════════════════════════════════════════════════ -->
 
 <script>
 // ═══════════════════════════════════════
@@ -3372,7 +4382,7 @@ Click below to switch the target to <code>Fe_pct</code> and see regression mode 
   },
   {
     title: '11 — Export Formats',
-    desc: `The final goal is to get your tree <em>out</em> of Arborist and into production. The <strong>Export</strong> section (in the inspector, below Decision Rules) provides five formats:
+    desc: `The final goal is to get your tree <em>out</em> of Arborist and into production. The <strong>Export</strong> section (in the inspector, below Decision Rules) provides five clipboard formats, plus file exports:
 <br><br>
 <strong>📋 Rules</strong> — Human-readable pseudocode:
 <br><code>IF Fe ≤ 58 AND weathering = "fresh" THEN BIF</code>
@@ -3394,7 +4404,25 @@ All exports are <strong>regression-aware</strong> — numeric predictions for re
     actions: [{ label: '🗄 Copy SQL CASE', fn: () => exportRules('sql') }],
   },
   {
-    title: '12 — Import SQL',
+    title: '12 — Leapfrog Export',
+    desc: `Arborist can export your tree directly as a <strong>Leapfrog .lfcalc file</strong> — the native calculation set format used by Seequent's Leapfrog Geo and Leapfrog Works.
+<br><br>
+<strong>Why this matters:</strong> The traditional workflow for getting CART rules into Leapfrog is painful — you'd export SQL or Python, then manually rebuild the logic as a Leapfrog calculation using nested if/else blocks in the calculator UI. For a tree with 15+ leaves, this is tedious and error-prone.
+<br><br>
+<strong>With .lfcalc export:</strong> Click <strong>🐸 Leapfrog .lfcalc</strong> in the left panel, map your variable names if needed, and download. In Leapfrog, go to <em>Calculations → Import</em> and select the file. Your entire decision tree appears as a native calculation set, ready to evaluate against your block model.
+<br><br>
+<strong>Variable remapping:</strong> CSV column names often differ from Leapfrog variable names (e.g. <code>Fe_pct</code> in your CSV vs. <code>Fe</code> in the block model). The export dialog lets you remap each variable before export — no manual find-and-replace needed.
+<br><br>
+<strong>What gets exported:</strong>
+<br>• One <strong>Calculation</strong> (Category for classification, Number for regression) containing the full nested if/else tree
+<br>• The <code>[variable]</code> references in the expression resolve directly against your block model columns — no intermediate Variable items needed
+<br>• The output calculation name is configurable (defaults to <code>{target}_pred</code>)
+<br><br>
+Try it now — click the button below to open the export dialog.`,
+    actions: [{ label: '🐸 Open Leapfrog Export', fn: () => showLfcalcDialog() }],
+  },
+  {
+    title: '13 — Import SQL',
     desc: `Arborist can also go the <strong>other direction</strong> — import existing rules as a tree structure.
 <br><br>
 <strong>The use case:</strong> A geologist has domain rules in SQL from a previous study (maybe from Minitab, a legacy block model, or hand-coded by a consultant). They want to:
@@ -3420,7 +4448,7 @@ Click below to open the import dialog and try pasting a CASE WHEN block.`,
     actions: [{ label: '📥 Open Import Dialog', fn: () => showSQLImportDialog() }],
   },
   {
-    title: '13 — Projects',
+    title: '14 — Projects',
     desc: `Arborist stores projects in the browser's <strong>IndexedDB</strong>, which has effectively no size limit — you can save datasets with hundreds of thousands of rows without issue.
 <br><br>
 <strong>The Projects section</strong> in the left panel provides four operations:
@@ -3439,7 +4467,7 @@ Click below to open the import dialog and try pasting a CASE WHEN block.`,
     actions: [],
   },
   {
-    title: '14 — Tree Parameters',
+    title: '15 — Tree Parameters',
     desc: `Let's circle back to the <strong>Configuration</strong> section and understand the parameters that control tree growth:
 <br><br>
 <strong>Max Depth</strong> (default: 5)
@@ -3458,7 +4486,7 @@ Click below to open the import dialog and try pasting a CASE WHEN block.`,
     actions: [],
   },
   {
-    title: '15 — Gini Impurity',
+    title: '16 — Gini Impurity',
     desc: `Let's go deeper on the mathematics. <strong>Gini impurity</strong> is the splitting criterion for classification trees.
 <br><br>
 <strong>Formula:</strong>
@@ -3482,7 +4510,7 @@ Click below to open the import dialog and try pasting a CASE WHEN block.`,
     actions: [],
   },
   {
-    title: '16 — Variance & R²',
+    title: '17 — Variance & R²',
     desc: `For <strong>regression trees</strong>, the splitting criterion switches from Gini to <strong>variance reduction</strong>.
 <br><br>
 <strong>Node variance:</strong>
@@ -3536,6 +4564,23 @@ Click below to open the import dialog and try pasting a CASE WHEN block.`,
 <br><br>
 <em style="color:var(--text-faint);">© 2026 Arthur Endlein · MIT License · Geoscientific Chaos Union</em>`,
     actions: [{ label: '⛏ Reload Iron Ore Classification', fn: () => { loadExample('ironore'); setTimeout(zoomFit, 60); } }],
+  },
+  {
+    title: 'Certificate',
+    desc: `Completed the workshop? Enter your full name below and click <strong>Claim Certificate</strong> to open a certificate request on GitHub. A bot will validate your submission and reply with a link to view and download your certificate as a PDF.
+<br><br>
+Completou o workshop? Digite seu nome completo abaixo e clique em <strong>Claim Certificate</strong> para abrir uma solicita\u00e7\u00e3o de certificado no GitHub. Um bot vai validar sua submiss\u00e3o e responder com um link para visualizar e baixar seu certificado em PDF.
+<br><br>
+<div>
+  <label for="cert-name" style="display:block;font-family:var(--mono);font-size:0.58rem;color:var(--text-faint);margin-bottom:0.3rem;">Full name / Nome completo</label>
+  <input type="text" id="cert-name" placeholder="Your Name" style="width:100%;padding:0.35rem 0.5rem;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:0.62rem;box-sizing:border-box;">
+  <div style="margin-top:0.4rem;display:flex;align-items:center;gap:0.5rem;">
+    <button onclick="claimCertificate()" style="padding:0.35rem 0.7rem;background:var(--green);border:none;border-radius:4px;color:#111;font-family:var(--mono);font-size:0.62rem;font-weight:700;cursor:pointer;">Claim Certificate</button>
+    <span id="cert-status" style="font-family:var(--mono);font-size:0.55rem;"></span>
+  </div>
+</div>
+<br><span style="font-size:0.55rem;color:var(--text-faint);">Requires a GitHub account. If you don't have one, ask the instructor.<br>Requer conta no GitHub. Caso n\u00e3o tenha, pe\u00e7a ao instrutor.</span>`,
+    actions: [],
   },
 ];
 
@@ -4538,6 +5583,145 @@ function loadExample(name) {
   growTree();
   setTimeout(zoomFit, 50);
   showToast(`Loaded example: ${name}`);
+}
+
+// ═══════════════════════════════════════
+//  CERTIFICATE
+// ═══════════════════════════════════════
+const CERT_SALT = 'patchbay-gcu-2026';
+const CERT_WORKSHOP_ID = 'BM-301';
+const CERT_REPO = 'endarthur/etc';
+
+async function computeCompletionHash(workshopId, date) {
+  const data = new TextEncoder().encode(workshopId + ':' + date + ':' + CERT_SALT);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+}
+
+async function claimCertificate() {
+  const input = document.getElementById('cert-name');
+  const status = document.getElementById('cert-status');
+  const name = (input.value || '').trim();
+  if (!name || name.length < 2) {
+    status.textContent = 'Please enter your full name (at least 2 characters).';
+    status.style.color = 'var(--amber)';
+    return;
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  const hash = await computeCompletionHash(CERT_WORKSHOP_ID, today);
+  const params = new URLSearchParams({
+    template: 'cert-request.yml',
+    title: 'cert: ' + CERT_WORKSHOP_ID,
+    fullname: name, workshop: CERT_WORKSHOP_ID, date: today, hash: hash,
+  });
+  status.textContent = 'Opening GitHub \u2014 submit the issue to receive your certificate.';
+  status.style.color = 'var(--green-bright)';
+  window.open('https://github.com/' + CERT_REPO + '/issues/new?' + params, '_blank');
+}
+
+// ═══════════════════════════════════════
+//  LEAPFROG EXPORT
+// ═══════════════════════════════════════
+function showLfcalcDialog() {
+  if (!TREE) return;
+  document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
+
+  // Collect features used in splits
+  const features = new Set();
+  (function walk(n) {
+    if (n.leaf) return;
+    features.add(n.split.feature);
+    walk(n.left); walk(n.right);
+  })(TREE);
+  const featureList = [...features].sort();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'load-dialog-overlay';
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+  const dialog = document.createElement('div');
+  dialog.className = 'lfcalc-dialog';
+
+  const defaultCalcName = (TREE._target || 'prediction') + '_pred';
+  const escAttr = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const escHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const varsHtml = featureList.map(f =>
+    `<div class="lf-var-row"><label>${escHtml(f)}</label><input type="text" data-csv-name="${escAttr(f)}" value="${escAttr(f)}"></div>`
+  ).join('');
+
+  dialog.innerHTML = `
+    <h3>🐸 Leapfrog Export</h3>
+    <div class="lf-hint">Map CSV column names to Leapfrog variable names. Edit to remap.</div>
+    <div class="lf-section">Variables</div>
+    ${varsHtml}
+    <div class="lf-section">Output</div>
+    <div class="lf-var-row">
+      <label>Calculation name</label>
+      <input type="text" id="lfCalcName" value="${escAttr(defaultCalcName)}">
+    </div>
+    <div class="lf-buttons">
+      <button class="lf-cancel" onclick="this.closest('.load-dialog-overlay').remove()">Cancel</button>
+      <button class="lf-export" onclick="exportLfcalc()">Export .lfcalc</button>
+    </div>`;
+
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+}
+
+function treeToLfcalc(node, varMap, calcName) {
+  const isReg = TREE_MODE === 'regression';
+
+  // Recursive converter: tree node → Pollywog If/value
+  function convert(n) {
+    if (n.leaf) {
+      if (isReg) {
+        const v = Number(n.prediction);
+        return Number.isInteger(v) ? String(v) : v.toFixed(6);
+      }
+      return '"' + String(n.prediction) + '"';
+    }
+    const s = n.split;
+    const mapped = varMap[s.feature] || s.feature;
+    let cond;
+    if (s.type === 'numeric') {
+      const thresh = Number.isInteger(s.threshold) ? String(s.threshold) : s.threshold.toFixed(6);
+      cond = '[' + mapped + '] <= ' + thresh;
+    } else {
+      cond = '[' + mapped + '] == "' + s.category + '"';
+    }
+    return Pollywog.If(cond, convert(n.left), convert(n.right));
+  }
+
+  const expr = convert(node);
+
+  // Wrap in Category (classification) or NumberCalc (regression)
+  // No Variable items needed — [bracketed] references resolve directly against the block model
+  const CalcType = isReg ? Pollywog.NumberCalc : Pollywog.Category;
+  const comment = 'Arborist CART ' + (isReg ? 'regression' : 'classification') + ' tree';
+  const calc = new CalcType(calcName, [expr], '', comment);
+
+  return new Pollywog.CalcSet([calc]);
+}
+
+function exportLfcalc() {
+  try {
+    const dialog = document.querySelector('.lfcalc-dialog');
+    const varMap = {};
+    dialog.querySelectorAll('.lf-var-row input[data-csv-name]').forEach(input => {
+      varMap[input.dataset.csvName] = input.value.trim() || input.dataset.csvName;
+    });
+    const calcName = document.getElementById('lfCalcName').value.trim() || (TREE._target + '_pred');
+    const calcSet = treeToLfcalc(TREE, varMap, calcName);
+    calcSet.downloadLfcalc('arborist_tree.lfcalc').then(() => {
+      showToast('Leapfrog .lfcalc exported');
+      document.querySelector('.load-dialog-overlay')?.remove();
+    }).catch(err => {
+      showToast('Export failed: ' + err.message);
+    });
+  } catch (err) {
+    showToast('Export failed: ' + err.message);
+  }
 }
 
 // ═══════════════════════════════════════
