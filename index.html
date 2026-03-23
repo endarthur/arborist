@@ -67,8 +67,15 @@ body {
 .section-label {
   font-family:var(--mono); font-size:0.62rem; font-weight:600;
   color:var(--text-faint); text-transform:uppercase; letter-spacing:0.06em;
-  margin-bottom:0.5rem;
+  margin-bottom:0.5rem; display:flex; align-items:center; justify-content:space-between;
 }
+.param-help-btn {
+  padding:0 0.35rem; height:1.2rem; border:1px solid var(--border); border-radius:3px;
+  background:var(--surface2); color:var(--text-faint); font-family:var(--mono);
+  font-size:0.6rem; cursor:pointer; transition:all 0.15s; line-height:1;
+  text-transform:none; letter-spacing:0; font-weight:700;
+}
+.param-help-btn:hover { border-color:var(--green); color:var(--green-bright); }
 
 .example-btn {
   display:block; width:100%; padding:0.45rem 0.6rem; margin-bottom:0.3rem;
@@ -868,7 +875,9 @@ body {
     </div>
 
     <div class="section" id="configSection" style="display:none;">
-      <div class="section-label">Configuration</div>
+      <div class="section-label">Configuration
+        <button class="param-help-btn" onclick="showParamHelp()" title="Explain tree parameters">?</button>
+      </div>
       <div class="ctrl-row">
         <label>Target</label>
         <select id="targetSelect"></select>
@@ -4151,6 +4160,53 @@ function showHelp() {
       Pedregosa, F. et al. (2011). Scikit-learn: Machine Learning in Python. <em>Journal of Machine Learning Research</em>, 12, pp. 2825–2830.
     </p>
     <p style="color:var(--text-faint); font-size:0.58rem; margin-top:0.6rem;">Arborist v0.1.0 · Geoscientific Chaos Union · © 2026 Arthur Endlein · MIT License</p>
+
+    <button class="help-close" onclick="this.closest('.load-dialog-overlay').remove()">Close</button>
+  `;
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+}
+
+function showParamHelp() {
+  document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
+  const overlay = document.createElement('div');
+  overlay.className = 'load-dialog-overlay';
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+  const dialog = document.createElement('div');
+  dialog.className = 'help-dialog';
+  dialog.style.width = '420px';
+  dialog.innerHTML = `
+    <h3>⚙️ Tree Parameters</h3>
+    <div class="help-sub">What each configuration option does</div>
+
+    <h4>Target</h4>
+    <p>The column you want the tree to <strong>predict</strong>. For example, if your spreadsheet has rock types and chemical values, and you want to predict the rock type, you'd choose that column here.</p>
+    <p>Columns with text values (categories) appear at the top of the list. Columns with numbers appear below. The tree automatically detects whether it's a <em>classification</em> (predicting categories) or <em>regression</em> (predicting a number) problem.</p>
+
+    <h4>Max Depth</h4>
+    <p>The <strong>maximum number of questions</strong> the tree can ask from the root to any leaf. Think of it like a flowchart — depth 1 means just one question; depth 5 means up to 5 questions in a row.</p>
+    <ul>
+      <li><strong>Too small</strong> (e.g. 1–2) → tree is too simple, may miss real patterns (<em>underfitting</em>)</li>
+      <li><strong>Too large</strong> (e.g. 15+) → tree memorises noise in your data (<em>overfitting</em>)</li>
+      <li><strong>Default: 5</strong> — a good starting point for most datasets</li>
+    </ul>
+
+    <h4>Min Leaf</h4>
+    <p>The <strong>minimum number of samples</strong> that must end up in a leaf node. A leaf is a "final answer" box at the bottom of the tree.</p>
+    <ul>
+      <li>A leaf with only 1–2 samples might look 100% pure, but could just be noise</li>
+      <li>Increasing this value makes the tree more conservative and reliable</li>
+      <li><strong>Default: 5</strong> — each final group must have at least 5 data points</li>
+    </ul>
+
+    <h4>Min Split</h4>
+    <p>The <strong>minimum number of samples</strong> a node must have before the tree is even allowed to try splitting it. If a node has fewer samples than this, it stays as a leaf.</p>
+    <ul>
+      <li>A good rule of thumb is to set this to roughly <strong>2 × Min Leaf</strong></li>
+      <li>This prevents splits where one of the two children would be too small</li>
+      <li><strong>Default: 10</strong></li>
+    </ul>
 
     <button class="help-close" onclick="this.closest('.load-dialog-overlay').remove()">Close</button>
   `;
