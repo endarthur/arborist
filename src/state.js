@@ -21,3 +21,21 @@ const NULL_SENTINELS = new Set([
   '-1.0e+32', '-1e+32', '1e+31'
 ]);
 
+// ═══════════════════════════════════════
+//  PUB/SUB CHANNELS
+// ═══════════════════════════════════════
+// Flat channel store for panel-to-panel notification. See SPEC §2.2.
+// Usage: subscribe('tree', fn) → unsub; publish('tree', value).
+const CHANNELS = Object.create(null);
+function subscribe(channel, fn) {
+  (CHANNELS[channel] ??= new Set()).add(fn);
+  return () => CHANNELS[channel] && CHANNELS[channel].delete(fn);
+}
+function publish(channel, value) {
+  const subs = CHANNELS[channel];
+  if (!subs) return;
+  for (const fn of subs) {
+    try { fn(value); } catch (e) { console.error(`[channel ${channel}]`, e); }
+  }
+}
+

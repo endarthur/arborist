@@ -1,4 +1,17 @@
 // ═══════════════════════════════════════
+//  PANEL: Tree (canvas + inspector overlay)
+// ═══════════════════════════════════════
+// v1 .main DOM lives in <template id="tpl-tree-panel"> in src/index.html.
+// Cloned once, cached, reused across mount/unmount cycles.
+let _treePanelElement = null;
+function getTreePanelElement() {
+  if (_treePanelElement) return _treePanelElement;
+  const tpl = document.getElementById('tpl-tree-panel');
+  _treePanelElement = tpl.content.firstElementChild.cloneNode(true);
+  return _treePanelElement;
+}
+
+// ═══════════════════════════════════════
 //  TREE VIZ (SVG)
 // ═══════════════════════════════════════
 const NODE_W = 160, NODE_H = 62, H_GAP = 30, V_GAP = 55;
@@ -166,23 +179,28 @@ function zoomFit() {
   applyTransform();
 }
 
-// Wheel zoom (zoom toward cursor)
-document.getElementById('treeContainer').addEventListener('wheel', function(e) {
-  e.preventDefault();
-  const rect = this.getBoundingClientRect();
-  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-  const oldZoom = svgZoom;
-  if (e.deltaY < 0) svgZoom = Math.min(svgZoom * 1.15, 3);
-  else svgZoom = Math.max(svgZoom / 1.15, 0.1);
-  // Adjust pan so zoom centers on cursor
-  panX = mx - (mx - panX) * (svgZoom / oldZoom);
-  panY = my - (my - panY) * (svgZoom / oldZoom);
-  applyTransform();
-}, { passive: false });
-
-// Drag-to-pan (unconstrained)
-(function() {
+// Wheel zoom (zoom toward cursor) — called by app.js after tree panel mounts.
+function initTreeWheelZoom() {
   const tc = document.getElementById('treeContainer');
+  if (!tc) return;
+  tc.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    const rect = this.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const oldZoom = svgZoom;
+    if (e.deltaY < 0) svgZoom = Math.min(svgZoom * 1.15, 3);
+    else svgZoom = Math.max(svgZoom / 1.15, 0.1);
+    // Adjust pan so zoom centers on cursor
+    panX = mx - (mx - panX) * (svgZoom / oldZoom);
+    panY = my - (my - panY) * (svgZoom / oldZoom);
+    applyTransform();
+  }, { passive: false });
+}
+
+// Drag-to-pan (unconstrained) — called by app.js after tree panel mounts.
+function initTreePan() {
+  const tc = document.getElementById('treeContainer');
+  if (!tc) return;
   let isPanning = false, didDrag = false, startX, startY, startPanX, startPanY;
 
   tc.addEventListener('pointerdown', function(e) {
@@ -208,7 +226,7 @@ document.getElementById('treeContainer').addEventListener('wheel', function(e) {
     // Click without drag = deselect
     if (!didDrag && selectedNodeId !== null) deselectNode();
   });
-})();
+}
 
 // ═══════════════════════════════════════
 //  INSPECTOR PANEL: toggle + resize
@@ -227,9 +245,11 @@ function toggleInspector() {
   }
 }
 
-(function() {
+// Inspector resize handle — called by app.js after tree panel mounts.
+function initInspectorResize() {
   const panel = document.getElementById('panelRight');
   const handle = document.getElementById('resizeHandle');
+  if (!panel || !handle) return;
   let isResizing = false, startX, startW;
 
   handle.addEventListener('pointerdown', function(e) {
@@ -249,7 +269,7 @@ function toggleInspector() {
     isResizing = false; handle.classList.remove('active');
     handle.releasePointerCapture(e.pointerId);
   });
-})();
+}
 
 // ═══════════════════════════════════════
 //  INSPECTOR

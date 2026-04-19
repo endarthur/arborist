@@ -11,9 +11,10 @@
 </style>
 </head>
 <body>
-<div class="app">
+<div id="dockview-container" class="dockview-theme-dark"></div>
 
-  <!-- LEFT PANEL -->
+<!-- Panel content templates. Cloned on first mount by panel DOM factories. -->
+<template id="tpl-data-panel">
   <div class="panel-left">
     <div class="logo">
       <h1>🌳 Arbor<span>ist</span></h1>
@@ -105,8 +106,9 @@
       </div>
     </div>
   </div>
+</template>
 
-  <!-- MAIN -->
+<template id="tpl-tree-panel">
   <div class="main">
     <div class="main-toolbar">
       <span>Tree View</span>
@@ -193,9 +195,15 @@
       </div>
     </div>
   </div>
+</template>
 
-</div>
-
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     vendor: dockview-core 5.2.0 (MIT) — https://github.com/mathuo/dockview
+     exposes window["dockview-core"], auto-injects its own CSS on load
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<script>
+<!-- INLINE: vendor/dockview-core.min.js -->
+</script>
 <!-- ═══════════════════════════════════════════════════════════════════════════
      pollywog.js — Leapfrog .lfcalc builder (vendored, do not edit)
      ═══════════════════════════════════════════════════════════════════════════ -->
@@ -217,6 +225,8 @@
 <!-- INLINE: certificate.js -->
 <!-- INLINE: leapfrog-export.js -->
 <!-- INLINE: toast.js -->
+<!-- INLINE: panels/data.js -->
+<!-- INLINE: app.js -->
 </script>
 </body>
 </html>

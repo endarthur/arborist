@@ -1,17 +1,21 @@
 // ═══════════════════════════════════════
 //  FILE HANDLING
 // ═══════════════════════════════════════
-const dropZones = document.querySelectorAll('.drop-zone');
-const fileInput = document.getElementById('fileInput');
-dropZones.forEach(dz => {
-  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-  dz.addEventListener('drop', e => {
-    e.preventDefault(); dz.classList.remove('drag-over');
-    if (e.dataTransfer.files[0]) readCSVFile(e.dataTransfer.files[0]);
+// Called by app.js once panels are mounted (template DOM is live).
+function initDataPanelFileDrop() {
+  const dropZones = document.querySelectorAll('.drop-zone');
+  const fileInput = document.getElementById('fileInput');
+  if (!fileInput) return;
+  dropZones.forEach(dz => {
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+    dz.addEventListener('drop', e => {
+      e.preventDefault(); dz.classList.remove('drag-over');
+      if (e.dataTransfer.files[0]) readCSVFile(e.dataTransfer.files[0]);
+    });
   });
-});
-fileInput.addEventListener('change', e => { if (e.target.files[0]) readCSVFile(e.target.files[0]); });
+  fileInput.addEventListener('change', e => { if (e.target.files[0]) readCSVFile(e.target.files[0]); });
+}
 
 function readCSVFile(file) {
   const reader = new FileReader();
@@ -294,10 +298,14 @@ function importProject(file) {
   reader.readAsText(file);
 }
 
-document.getElementById('importInput').addEventListener('change', e => {
-  if (e.target.files[0]) importProject(e.target.files[0]);
-  e.target.value = '';
-});
+function initImportInputListener() {
+  const input = document.getElementById('importInput');
+  if (!input) return;
+  input.addEventListener('change', e => {
+    if (e.target.files[0]) importProject(e.target.files[0]);
+    e.target.value = '';
+  });
+}
 
 // Tree serialization (strip _rows to save space, store structure only)
 function serializeTree(node) {
@@ -366,5 +374,4 @@ async function refreshSavedLists() {
   }
 }
 
-refreshSavedLists();
-
+// Called by app.js after panels mount.

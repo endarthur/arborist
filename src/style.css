@@ -31,10 +31,15 @@ body {
 }
 
 /* ── LAYOUT ── */
-.app { display:flex; height:100vh; }
+#dockview-container {
+  position:absolute; top:0; left:0; right:0; bottom:0;
+}
 
+/* v1 .panel-left and .main previously lived inside a flex .app wrapper with
+   fixed widths. Now each is the root of a dockview panel's content, so they
+   must fill the slot dockview allocates. */
 .panel-left {
-  width:280px; flex-shrink:0; background:var(--surface);
+  width:100%; height:100%; background:var(--surface);
   border-right:1px solid var(--border);
   display:flex; flex-direction:column; overflow-y:auto;
   scrollbar-width:thin; scrollbar-color:var(--border) transparent;
@@ -119,7 +124,7 @@ body {
 
 /* ── MAIN ── */
 .main {
-  flex:1; display:flex; flex-direction:column; position:relative;
+  width:100%; height:100%; display:flex; flex-direction:column; position:relative;
   background:var(--bg);
   background-image: radial-gradient(circle, rgba(45,51,45,0.4) 0.6px, transparent 0.6px);
   background-size:20px 20px;
