@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arborist — Decision Tree Cultivator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Literata:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+<!-- INLINE: style.css -->
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+    <div class="logo">
+      <h1>🌳 Arbor<span>ist</span></h1>
+      <div class="sub">Decision Tree Cultivator</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label" style="display:flex;justify-content:space-between;align-items:center;">
+        Data
+        <button id="csvConfigBtn" class="csv-config-gear" onclick="showCSVConfig()" style="display:none;" title="CSV parsing settings">⚙</button>
+      </div>
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        📂 Drop CSV here or click to browse
+      </div>
+      <input type="file" id="fileInput" accept=".csv,.tsv,.txt" style="display:none" />
+      <div id="dataSummary" style="display:none;"></div>
+      <div id="filterSection" style="display:none;">
+        <div class="filter-section">
+          <div class="filter-label">Row Filter</div>
+          <div class="filter-row">
+            <input type="text" class="filter-input" id="filterInput"
+              placeholder="e.g. r.Fe_pct > 60" spellcheck="false" autocomplete="off" />
+            <div class="filter-actions">
+              <button class="filter-btn" onclick="applyFilter()" title="Apply filter">✓</button>
+              <button class="filter-btn filter-clear" onclick="clearFilter()" title="Clear filter">✕</button>
+            </div>
+          </div>
+          <div class="filter-error" id="filterError"></div>
+          <div class="filter-count" id="filterCount"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" id="configSection" style="display:none;">
+      <div class="section-label">Configuration
+        <button class="param-help-btn" onclick="showParamHelp()" title="Explain tree parameters">?</button>
+      </div>
+      <div class="ctrl-row">
+        <label>Target</label>
+        <select id="targetSelect"></select>
+      </div>
+      <div class="ctrl-row">
+        <label>Max Depth</label>
+        <input type="number" id="maxDepth" value="5" min="1" max="20" step="1" />
+      </div>
+      <div class="ctrl-row">
+        <label>Min Leaf</label>
+        <input type="number" id="minLeaf" value="5" min="1" max="100" step="1" />
+      </div>
+      <div class="ctrl-row">
+        <label>Min Split</label>
+        <input type="number" id="minSplit" value="10" min="2" max="200" step="1" />
+      </div>
+      <button class="grow-btn" id="growBtn" onclick="growTree()">🌱 Grow Tree</button>
+    </div>
+
+    <div class="stats" id="statsBar" style="display:none;"></div>
+
+    <div class="section" id="fileOpsSection">
+      <div class="section-label">Projects</div>
+      <div class="file-ops-grid">
+        <button class="file-btn" onclick="saveProject()" title="Save to browser storage">
+          <span class="file-icon">💾</span> Save
+        </button>
+        <button class="file-btn" onclick="showLoadDialog()" title="Load from browser storage">
+          <span class="file-icon">📂</span> Open
+        </button>
+        <button class="file-btn" onclick="exportProject()" title="Export as JSON file">
+          <span class="file-icon">📤</span> Export
+        </button>
+        <button class="file-btn" onclick="document.getElementById('importInput').click()" title="Import JSON file">
+          <span class="file-icon">📥</span> Import
+        </button>
+      </div>
+      <input type="file" id="importInput" accept=".json" style="display:none" />
+      <button class="file-btn leapfrog-btn" onclick="showLfcalcDialog()" title="Export tree as Leapfrog .lfcalc file">
+        <span class="file-icon">🐸</span> Leapfrog .lfcalc
+      </button>
+      <div id="savedProjectsList"></div>
+    </div>
+
+    <div style="padding:0.5rem 1rem; margin-top:auto; border-top:1px solid var(--border);">
+      <div style="font-family:var(--mono); font-size:0.55rem; color:var(--text-faint); text-align:center; line-height:1.8;">
+        <span style="color:var(--text-dim);">Arborist</span> v0.1.0 <span style="background:var(--green-dim);color:var(--green-bright);padding:0.05rem 0.25rem;border-radius:2px;font-size:0.48rem;font-weight:700;letter-spacing:0.04em;">WA</span><br>
+        Geoscientific Chaos Union<br>
+        <a href="https://github.com/endarthur/arborist" target="_blank" style="color:var(--green);text-decoration:none;opacity:0.7;">github.com/endarthur/arborist</a><br>
+        <span style="opacity:0.5;">DOI: pending first release</span><br>
+        © 2026 Arthur Endlein · MIT License
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="main-toolbar">
+      <span>Tree View</span>
+      <span class="spacer"></span>
+      <button class="tb-btn" onclick="showHelp()" title="Help & Guide">?</button>
+      <button class="tb-btn" onclick="startWorkshop()" title="Guided Workshop" style="font-size:0.58rem;">📖</button>
+      <button class="tb-btn" onclick="zoomFit()" title="Fit tree to view">Fit</button>
+      <button class="tb-btn" onclick="zoomIn()">+</button>
+      <button class="tb-btn" onclick="zoomOut()">−</button>
+      <span id="zoomLevel" style="min-width:3em; text-align:center;">100%</span>
+    </div>
+    <div class="tree-container" id="treeContainer">
+      <div class="empty-state" id="emptyState">
+        <div class="splash">
+          <div class="splash-hero">
+            <div class="splash-icon">🌳</div>
+            <h2>Welcome to Arborist</h2>
+            <p>Build, reshape, and export decision trees for classification and regression</p>
+          </div>
+          <div class="splash-grid">
+            <div class="splash-section">
+              <div class="splash-label">Example Datasets</div>
+              <button class="example-btn" onclick="loadExample('ironore')">
+                <div class="ex-name">⛏ Iron Ore Domains</div>
+                <div class="ex-desc">Fe, SiO₂, depth, weathering → domain <span style="opacity:0.5">(semicolon, comma-decimal)</span></div>
+              </button>
+              <button class="example-btn" onclick="loadExample('rocktype')">
+                <div class="ex-name">🪨 Rock Type (Geochemistry)</div>
+                <div class="ex-desc">Major oxides → basalt / andesite / dacite / rhyolite <span style="opacity:0.5">(tab-delimited)</span></div>
+              </button>
+              <button class="example-btn" onclick="loadExample('iris')">
+                <div class="ex-name">🌺 Iris (Classic ML)</div>
+                <div class="ex-desc">Petal & sepal measurements → species <span style="opacity:0.5">(comma)</span></div>
+              </button>
+            </div>
+            <div class="splash-section">
+              <div class="splash-label">Your Data</div>
+              <div class="drop-zone splash-drop" onclick="document.getElementById('fileInput').click()">
+                📂 Drop CSV here<br>or click to browse
+              </div>
+              <div class="splash-label" style="margin-top:0.8rem;">Saved Projects</div>
+              <div id="splashSavedList" class="splash-saved"></div>
+            </div>
+          </div>
+          <div class="splash-workshop">
+            <button class="workshop-launch-btn" onclick="startWorkshop()">
+              <span>📖</span>
+              <span><strong>Guided Workshop</strong><br>Interactive introduction to decision trees, CART, Gini impurity, and the bonsai workflow</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INSPECTOR (overlay) -->
+    <button class="panel-toggle" id="panelToggle" onclick="toggleInspector()">◀ Inspector</button>
+    <div class="panel-right" id="panelRight">
+      <div class="resize-handle" id="resizeHandle"></div>
+      <div class="inspector-header">
+        <h3>🔍 Inspector</h3>
+      </div>
+      <div class="undo-bar" id="undoBar" style="display:none;">
+        <span>Edits: <span class="edit-count">0</span></span>
+        <button class="bonsai-btn" onclick="undoEdit()" style="margin-left:auto;">↩ Undo</button>
+        <button class="bonsai-btn danger" onclick="resetTree()">⟲ Reset</button>
+      </div>
+      <div id="inspectorContent">
+        <div class="inspector-empty">Click a node in the tree to inspect it</div>
+      </div>
+      <div class="inspector-section" id="rulesSection" style="display:none;">
+        <h4>Decision Rules</h4>
+        <div class="rules-box" id="rulesBox"></div>
+        <div style="font-family:var(--mono);font-size:0.52rem;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.06em;margin-top:0.6rem;margin-bottom:0.25rem;">Export</div>
+        <div class="export-grid">
+          <button class="export-btn" onclick="exportRules('text')">📋 Rules</button>
+          <button class="export-btn" onclick="exportRules('python')">🐍 Python</button>
+          <button class="export-btn" onclick="exportRules('excel')">📊 Excel IF</button>
+          <button class="export-btn" onclick="exportRules('sql')">🗄 SQL CASE</button>
+          <button class="export-btn" onclick="exportCSVPredictions()">📁 CSV</button>
+        </div>
+        <div class="export-grid export-grid-import">
+          <button class="export-btn import-btn" onclick="showSQLImportDialog()">📥 Import SQL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     pollywog.js — Leapfrog .lfcalc builder (vendored, do not edit)
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<script>
+<!-- INLINE: pollywog.js -->
+</script>
+<script>
+<!-- INLINE: state.js -->
+<!-- INLINE: csv.js -->
+<!-- INLINE: cart.js -->
+<!-- INLINE: panels/tree.js -->
+<!-- INLINE: bonsai.js -->
+<!-- INLINE: export.js -->
+<!-- INLINE: panels/help.js -->
+<!-- INLINE: panels/workshop.js -->
+<!-- INLINE: sql-import.js -->
+<!-- INLINE: persistence.js -->
+<!-- INLINE: examples.js -->
+<!-- INLINE: certificate.js -->
+<!-- INLINE: leapfrog-export.js -->
+<!-- INLINE: toast.js -->
+</script>
+</body>
+</html>
