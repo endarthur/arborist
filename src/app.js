@@ -30,29 +30,10 @@ function initDockview() {
   });
 
   // addPanel splits 50/50 by weight regardless of initialWidth, so the
-  // default layout is authored as a fromJSON payload where the leaf `size`
-  // values are relative weights — 280 vs 1000 gives roughly a 22/78 split
-  // that scales with the viewport.
-  _dockviewApi.fromJSON({
-    grid: {
-      root: {
-        type: 'branch',
-        data: [
-          { type: 'leaf', data: { views: ['data'], activeView: 'data', id: 'group-data' }, size: 280 },
-          { type: 'leaf', data: { views: ['tree'], activeView: 'tree', id: 'group-tree' }, size: 1000 },
-        ],
-        size: 800,
-      },
-      width: 1280,
-      height: 800,
-      orientation: 'HORIZONTAL',
-    },
-    panels: {
-      data: { id: 'data', contentComponent: 'data', title: 'Data' },
-      tree: { id: 'tree', contentComponent: 'tree', title: 'Tree Builder' },
-    },
-    activeGroup: 'group-tree',
-  });
+  // default layout is authored as a fromJSON payload (see DEFAULT_LAYOUT in
+  // menubar.js — shared with resetLayout()). The leaf `size` values are
+  // relative weights that dockview scales to viewport width.
+  _dockviewApi.fromJSON(DEFAULT_LAYOUT);
 }
 
 // Workshop and other helpers use this to guarantee a panel is visible before
@@ -69,6 +50,7 @@ function ensurePanelOpen(panelId) {
 }
 
 function bootstrapApp() {
+  initMenubar();
   initDockview();
   // Panel DOM is now live — wire up listeners that assume the elements exist.
   initDataPanelFileDrop();

@@ -471,8 +471,8 @@ function renderWorkshopCol() {
     col = document.createElement('div');
     col.className = 'workshop-col';
     col.id = 'workshopCol';
-    const app = document.querySelector('.app');
-    app.insertBefore(col, app.firstChild);
+    const appLayout = document.getElementById('app-layout');
+    appLayout.insertBefore(col, appLayout.firstChild);
   }
 
   const step = WORKSHOP_STEPS[workshopStep];

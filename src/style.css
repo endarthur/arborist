@@ -31,8 +31,50 @@ body {
 }
 
 /* ── LAYOUT ── */
+#menubar {
+  position:absolute; top:0; left:0; right:0; height:28px;
+  display:flex; align-items:stretch; padding:0 0.3rem;
+  background:var(--surface); border-bottom:1px solid var(--border);
+  z-index:100;
+  font-family:var(--mono); font-size:0.68rem;
+}
+#menubar .menubar-item {
+  padding:0 0.8rem; background:none; border:none;
+  color:var(--text-dim); font-family:inherit; font-size:inherit;
+  cursor:pointer; letter-spacing:0.02em;
+}
+#menubar .menubar-item:hover,
+#menubar .menubar-item.active {
+  background:var(--surface2); color:var(--text);
+}
+.menubar-dropdown {
+  position:absolute; background:var(--surface);
+  border:1px solid var(--border); border-top-color:var(--surface);
+  min-width:200px; padding:0.3rem 0;
+  box-shadow:0 6px 16px rgba(0,0,0,0.5);
+  z-index:99;
+  font-family:var(--mono); font-size:0.65rem;
+}
+.menubar-dropdown .menu-item {
+  display:block; width:100%; padding:0.35rem 0.8rem;
+  background:none; border:none; color:var(--text-dim);
+  font-family:inherit; font-size:inherit;
+  text-align:left; cursor:pointer;
+  white-space:nowrap;
+}
+.menubar-dropdown .menu-item:hover {
+  background:var(--green-dim); color:var(--green-bright);
+}
+.menubar-dropdown .menu-divider {
+  height:1px; background:var(--border); margin:0.25rem 0;
+}
+
+#app-layout {
+  position:absolute; top:28px; left:0; right:0; bottom:0;
+  display:flex;
+}
 #dockview-container {
-  position:absolute; top:0; left:0; right:0; bottom:0;
+  flex:1; position:relative; min-width:0;
 }
 
 /* v1 .panel-left and .main previously lived inside a flex .app wrapper with
