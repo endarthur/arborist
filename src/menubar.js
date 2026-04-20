@@ -13,6 +13,7 @@ const MENU_STRUCTURE = [
       { label: 'Load Iron Ore example', action: () => loadExample('ironore') },
       { label: 'Load Rock Type example', action: () => loadExample('rocktype') },
       { label: 'Load Iris example', action: () => loadExample('iris') },
+      { label: 'Load Cu Porphyry example', action: () => loadExample('porphyry') },
       { type: 'divider' },
       { label: 'Save Project', action: () => saveProject() },
       { label: 'Open Project…', action: () => showLoadDialog() },
@@ -28,6 +29,7 @@ const MENU_STRUCTURE = [
       return [
         { label: panelState('data') + 'Data', action: () => togglePanel('data') },
         { label: panelState('tree') + 'Tree Builder', action: () => togglePanel('tree') },
+        { label: panelState('validation') + 'Validation', action: () => togglePanel('validation') },
         { type: 'divider' },
         { label: 'Reset Layout', action: () => resetLayout() },
       ];
@@ -159,7 +161,14 @@ const DEFAULT_LAYOUT = {
       type: 'branch',
       data: [
         { type: 'leaf', data: { views: ['data'], activeView: 'data', id: 'group-data' }, size: 280 },
-        { type: 'leaf', data: { views: ['tree'], activeView: 'tree', id: 'group-tree' }, size: 1000 },
+        {
+          type: 'branch',
+          data: [
+            { type: 'leaf', data: { views: ['tree'], activeView: 'tree', id: 'group-tree' }, size: 600 },
+            { type: 'leaf', data: { views: ['validation'], activeView: 'validation', id: 'group-validation' }, size: 320 },
+          ],
+          size: 1000,
+        },
       ],
       size: 800,
     },
@@ -170,6 +179,7 @@ const DEFAULT_LAYOUT = {
   panels: {
     data: { id: 'data', contentComponent: 'data', title: 'Data' },
     tree: { id: 'tree', contentComponent: 'tree', title: 'Tree Builder' },
+    validation: { id: 'validation', contentComponent: 'validation', title: 'Validation' },
   },
   activeGroup: 'group-tree',
 };
@@ -184,6 +194,7 @@ function togglePanel(panelId) {
   const specs = {
     data: { title: 'Data', component: 'data' },
     tree: { title: 'Tree Builder', component: 'tree' },
+    validation: { title: 'Validation', component: 'validation' },
   };
   if (specs[panelId]) _dockviewApi.addPanel({ id: panelId, ...specs[panelId] });
 }

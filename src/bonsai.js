@@ -83,6 +83,8 @@ function refreshAfterEdit() {
     if (node) { selectedNodeId = node.id; selectNode(node.id); }
     else deselectNode();
   }
+
+  publish('tree', TREE);
 }
 
 function fixTreeMeta(node, depth) {

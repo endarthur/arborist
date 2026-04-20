@@ -218,12 +218,13 @@ function countNodes(node) {
 // ═══════════════════════════════════════
 function growTree() {
   if (!DATA) return;
-  const target = document.getElementById('targetSelect').value;
+  const roles = getColumnRoles();
+  const target = roles.target;
+  const features = roles.features;
   const maxDepth = parseInt(document.getElementById('maxDepth').value) || 5;
   const minLeaf = parseInt(document.getElementById('minLeaf').value) || 5;
   const minSplit = parseInt(document.getElementById('minSplit').value) || 10;
-  const features = DATA.headers.filter(h => h !== target);
-  const allRows = getFilteredRows();
+  const allRows = filterToTrain(getFilteredRows());
   const validRows = allRows.filter(r => r[target] !== '' && r[target] !== 'NA' && r[target] !== 'null');
 
   // Detect mode from target column type
@@ -266,5 +267,7 @@ function growTree() {
   renderRules();
   updateUndoBar();
   setTimeout(zoomFit, 30);
+
+  publish('tree', TREE);
 }
 

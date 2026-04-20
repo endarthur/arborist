@@ -116,16 +116,9 @@ function loadData(csvText, config) {
   DATA._origTypes = { ...DATA.types };
   currentFilter = null;
 
-  const sel = document.getElementById('targetSelect');
-  sel.innerHTML = '';
+  populateColumnRoleSelects();
   const cats = DATA.headers.filter(h => DATA.types[h] === 'categorical');
   const nums = DATA.headers.filter(h => DATA.types[h] === 'numeric');
-  [...cats, ...nums].forEach(h => {
-    const opt = document.createElement('option');
-    opt.value = h;
-    opt.textContent = h + (DATA.types[h] === 'categorical' ? ' ●' : ' #');
-    sel.appendChild(opt);
-  });
   document.getElementById('configSection').style.display = '';
   document.getElementById('growBtn').disabled = false;
   document.getElementById('csvConfigBtn').style.display = '';
@@ -150,6 +143,11 @@ function loadData(csvText, config) {
   const ds = document.getElementById('dataSummary');
   ds.style.display = '';
   renderDataSummary();
+
+  // Create the default train/test partition before any tree is grown.
+  initializeDefaultSplit();
+
+  publish('dataset', DATA);
 }
 
 function renderDataSummary() {

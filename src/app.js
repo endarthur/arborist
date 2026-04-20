@@ -17,6 +17,7 @@ function initDockview() {
       switch (options.name) {
         case 'data': element = getDataPanelElement(); break;
         case 'tree': element = getTreePanelElement(); break;
+        case 'validation': element = getValidationPanelElement(); break;
         default:
           element = document.createElement('div');
           element.textContent = `Unknown panel component: ${options.name}`;

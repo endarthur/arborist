@@ -147,16 +147,96 @@ function generateIris() {
   return 'sepal_length,sepal_width,petal_length,petal_width,species\n' + d.map(r => r.join(',')).join('\n');
 }
 
-const EXAMPLE_DATA = { ironore: generateIronOre(), rocktype: generateRockType(), iris: generateIris() };
+function generatePorphyry() {
+  // Synthetic Cu-porphyry dataset: 15 drillholes in a 5×3 grid centred on a
+  // radial porphyry system. Domains form concentric shells — core holes
+  // penetrate oxide → supergene → hypogene; holes further out see only
+  // oxide and propylitic alteration. Good for demonstrating column roles,
+  // drillhole-grouped CV, and (once 3D scatter lands) spatial structure.
+  const rng = mulberry32(777);
+  const r = (lo, hi) => lo + rng() * (hi - lo);
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  const cx = 100, cy = 50;
+  const holes = [];
+  let hid = 1;
+  for (const x of [0, 50, 100, 150, 200]) {
+    for (const y of [0, 50, 100]) {
+      const dist = Math.hypot(x - cx, y - cy);
+      holes.push({
+        id: `DH${String(hid).padStart(2, '0')}`,
+        x, y, dist,
+        to: dist < 75 ? 40 : 28,   // core holes drilled deeper
+      });
+      hid++;
+    }
+  }
+
+  const rows = [];
+  for (const h of holes) {
+    const inCore = h.dist < 55;
+    const inHalo = h.dist < 95;
+    for (let d = 2; d <= h.to; d += 2) {
+      const z = -d;
+      let domain, cu, mo, au, s, fe;
+      if (d < 7) {
+        // Oxide cap across the whole system
+        domain = 'oxide';
+        const coreBoost = inCore ? 0.3 : (inHalo ? 0.15 : 0);
+        cu = clamp(r(0.1, 0.5) + coreBoost, 0, 1.5);
+        mo = clamp(r(5, 25), 0, 80);
+        au = clamp(r(0.02, 0.12), 0, 0.4);
+        s  = clamp(r(0.1, 0.5), 0, 2);
+        fe = clamp(r(4, 8), 2, 15);
+      } else if (inCore && d < 16) {
+        domain = 'supergene';
+        cu = clamp(r(0.8, 2.0), 0.3, 3);
+        mo = clamp(r(30, 90), 5, 150);
+        au = clamp(r(0.1, 0.4), 0, 1);
+        s  = clamp(r(0.8, 2.5), 0.2, 4);
+        fe = clamp(r(5, 9), 3, 12);
+      } else if (inCore) {
+        domain = 'hypogene';
+        cu = clamp(r(0.4, 1.2), 0.1, 2);
+        mo = clamp(r(60, 150), 10, 250);
+        au = clamp(r(0.05, 0.3), 0, 0.8);
+        s  = clamp(r(2.0, 4.5), 1, 6);
+        fe = clamp(r(6, 10), 3, 15);
+      } else {
+        // Halo and far field are propylitic — background metals
+        domain = 'propylitic';
+        const halo = inHalo ? 1 : 0.5;
+        cu = clamp(r(0.02, 0.25) * halo, 0, 0.5);
+        mo = clamp(r(2, 20) * halo, 0, 40);
+        au = clamp(r(0.01, 0.1) * halo, 0, 0.25);
+        s  = clamp(r(0.1, 1.0), 0, 2);
+        fe = clamp(r(3, 6), 1, 10);
+      }
+      rows.push([h.id, h.x.toFixed(1), h.y.toFixed(1), z.toFixed(1), d.toFixed(1),
+                 cu.toFixed(3), mo.toFixed(1), au.toFixed(3), s.toFixed(2), fe.toFixed(2),
+                 domain]);
+    }
+  }
+  return 'dhid,x,y,z,depth,Cu_pct,Mo_ppm,Au_ppm,S_pct,Fe_pct,domain\n' +
+    rows.map(r => r.join(',')).join('\n');
+}
+
+const EXAMPLE_DATA = {
+  ironore: generateIronOre(),
+  rocktype: generateRockType(),
+  iris: generateIris(),
+  porphyry: generatePorphyry(),
+};
 
 function loadExample(name) {
   loadData(EXAMPLE_DATA[name]);
-  const nameMap = { ironore: 'Iron Ore Domains', rocktype: 'Rock Type', iris: 'Iris' };
+  const nameMap = { ironore: 'Iron Ore Domains', rocktype: 'Rock Type', iris: 'Iris', porphyry: 'Cu Porphyry' };
   DATA._name = nameMap[name] || name;
   const presets = {
     ironore: { target: 'domain', depth: 5, minLeaf: 3, minSplit: 6 },
     rocktype: { target: 'rock_type', depth: 4, minLeaf: 3, minSplit: 6 },
     iris: { target: 'species', depth: 4, minLeaf: 3, minSplit: 6 },
+    porphyry: { target: 'domain', depth: 5, minLeaf: 2, minSplit: 4 },
   };
   const p = presets[name];
   if (p) {
