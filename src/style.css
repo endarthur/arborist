@@ -956,6 +956,36 @@ body {
   padding-top:0.3rem; border-top:1px dashed var(--border);
 }
 
+/* ── FEATURE IMPORTANCE PANEL ── */
+.imp-panel {
+  width:100%; height:100%; display:flex; flex-direction:column;
+  overflow-y:auto; background:var(--surface);
+  scrollbar-width:thin; scrollbar-color:var(--border) transparent;
+}
+.imp-list { display:flex; flex-direction:column; gap:0.3rem; }
+.imp-row {
+  display:grid; grid-template-columns:7rem 1fr 3.2rem;
+  align-items:center; gap:0.5rem;
+  font-family:var(--mono); font-size:0.62rem;
+}
+.imp-row.imp-row-dim { opacity:0.45; }
+.imp-feature {
+  color:var(--amber); font-weight:600;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.imp-bar-wrap {
+  height:12px; background:var(--bg);
+  border:1px solid var(--border); border-radius:3px;
+  overflow:hidden;
+}
+.imp-bar {
+  height:100%; background:linear-gradient(90deg, var(--green-dim), var(--green));
+  transition:width 0.2s;
+}
+.imp-pct {
+  color:var(--green-bright); font-weight:600; text-align:right;
+}
+
 /* Toast */
 .toast {
   position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%);

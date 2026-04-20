@@ -46,8 +46,12 @@ function initValidationPanelListeners(root) {
 }
 
 function renderValidationPanel() {
-  const metricsEl = document.getElementById('valMetrics');
-  const confusionEl = document.getElementById('valConfusion');
+  // See importance.js — dockview may not have attached the panel to the
+  // live DOM if it's on an inactive tab. Query the cached root instead.
+  const root = _validationPanelElement;
+  if (!root) return;
+  const metricsEl = root.querySelector('#valMetrics');
+  const confusionEl = root.querySelector('#valConfusion');
   if (!metricsEl || !confusionEl) return;
 
   // Update the size echo ("= 60 samples") whenever inputs or data change.
@@ -92,7 +96,7 @@ function renderValidationPanel() {
   // (within buffer of any train sample) and isolated (outside buffer).
   const roles = getColumnRoles();
   const hasCoords = !!(roles && (roles.x || roles.y || roles.z));
-  const bufferSection = document.getElementById('valBufferSection');
+  const bufferSection = root.querySelector('#valBufferSection');
   if (bufferSection) bufferSection.style.display = hasCoords ? '' : 'none';
 
   let leakyHtml = '';
@@ -100,9 +104,9 @@ function renderValidationPanel() {
     const coordCols = { x: roles.x, y: roles.y, z: roles.z };
     const dists = computeTestDistances(testRows, trainRows, coordCols);
     const summary = summarizeDistances(dists);
-    const bufferInput = document.getElementById('valBuffer');
+    const bufferInput = root.querySelector('#valBuffer');
     const buffer = parseFloat(bufferInput?.value) || 0;
-    updateBufferHint(summary, buffer);
+    updateBufferHint(root, summary, buffer);
     if (buffer > 0) {
       const { leaky, isolated } = splitLeakyIsolated(dists, buffer);
       const leakyM = computeMetrics(TREE, leaky, isReg);
@@ -115,12 +119,12 @@ function renderValidationPanel() {
   confusionEl.innerHTML = isReg ? '' : renderConfusionMatrix(testM);
 
   // Hide the confusion section for regression.
-  const confSection = document.getElementById('valConfusionSection');
+  const confSection = root.querySelector('#valConfusionSection');
   if (confSection) confSection.style.display = isReg ? 'none' : '';
 }
 
-function updateBufferHint(summary, buffer) {
-  const el = document.getElementById('valBufferHint');
+function updateBufferHint(root, summary, buffer) {
+  const el = root.querySelector('#valBufferHint');
   if (!el) return;
   if (!summary) { el.textContent = ''; return; }
   const fmt = (v) => v.toFixed(2);
@@ -229,10 +233,12 @@ function renderConfusionMatrix(m) {
 }
 
 function updateValSizeEcho() {
-  const echo = document.getElementById('valSizeEcho');
-  const stratEl = document.getElementById('valStrategy');
-  const sizeVal = document.getElementById('valSizeValue');
-  const sizeUnit = document.getElementById('valSizeUnit');
+  const root = _validationPanelElement;
+  if (!root) return;
+  const echo = root.querySelector('#valSizeEcho');
+  const stratEl = root.querySelector('#valStrategy');
+  const sizeVal = root.querySelector('#valSizeValue');
+  const sizeUnit = root.querySelector('#valSizeUnit');
   if (!echo || !DATA) { if (echo) echo.textContent = ''; return; }
   const strategy = stratEl.value;
   const value = parseFloat(sizeVal.value) || 0;
