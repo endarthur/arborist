@@ -931,6 +931,31 @@ body {
 .val-pc-row .pc-class { color:var(--cyan); }
 .val-pc-row .pc-stats { color:var(--text-dim); }
 
+.val-buffer-row input[type="number"] { flex:0 0 4rem; }
+.val-buffer-units {
+  font-family:var(--mono); font-size:0.55rem; color:var(--text-faint);
+}
+.val-buffer-hint {
+  font-family:var(--mono); font-size:0.55rem; color:var(--text-faint);
+  margin:0.3rem 0 0 86px; line-height:1.5;
+}
+.val-leaky-box {
+  margin-top:0.6rem; padding:0.5rem 0.6rem;
+  background:var(--bg); border:1px solid var(--border); border-radius:4px;
+}
+.val-leaky-row {
+  display:flex; justify-content:space-between;
+  font-family:var(--mono); font-size:0.6rem; color:var(--text-dim);
+  padding:0.15rem 0;
+}
+.val-leaky-row span:first-child { color:var(--text-faint); }
+.val-leaky-row span:last-child { color:var(--text); font-weight:600; }
+.val-leaky-delta {
+  font-family:var(--mono); font-size:0.62rem; color:var(--amber);
+  font-weight:600; text-align:right; margin-top:0.3rem;
+  padding-top:0.3rem; border-top:1px dashed var(--border);
+}
+
 /* Toast */
 .toast {
   position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%);

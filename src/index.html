@@ -242,6 +242,15 @@
       <div class="val-size-echo" id="valSizeEcho"></div>
       <button class="val-resample-btn" id="valResampleBtn">↻ Resample</button>
     </div>
+    <div class="val-section" id="valBufferSection" style="display:none;">
+      <div class="val-section-label">Spatial exclusion buffer</div>
+      <div class="ctrl-row val-buffer-row">
+        <label>Buffer</label>
+        <input type="number" id="valBuffer" value="0" min="0" step="0.5" />
+        <span class="val-buffer-units">(XYZ units)</span>
+      </div>
+      <div class="val-buffer-hint" id="valBufferHint"></div>
+    </div>
     <div class="val-section" id="valMetrics"></div>
     <div class="val-section" id="valConfusionSection">
       <div class="val-section-label">Confusion Matrix</div>
@@ -266,6 +275,7 @@
 <script>
 <!-- INLINE: state.js -->
 <!-- INLINE: columns.js -->
+<!-- INLINE: spatial.js -->
 <!-- INLINE: validation.js -->
 <!-- INLINE: csv.js -->
 <!-- INLINE: cart.js -->

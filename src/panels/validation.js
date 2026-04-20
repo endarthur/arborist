@@ -18,6 +18,7 @@ function initValidationPanelListeners(root) {
   const sizeVal = root.querySelector('#valSizeValue');
   const sizeUnit = root.querySelector('#valSizeUnit');
   const resample = root.querySelector('#valResampleBtn');
+  const buffer = root.querySelector('#valBuffer');
   if (!strat) return;
 
   const applySplit = (reseed) => {
@@ -30,6 +31,7 @@ function initValidationPanelListeners(root) {
   sizeVal.addEventListener('change', () => applySplit(false));
   sizeUnit.addEventListener('change', () => applySplit(false));
   resample.addEventListener('click', () => applySplit(true));
+  buffer.addEventListener('input', renderValidationPanel);
 
   // Debounced subscribe for reactive rescoring.
   let rescoreTimer = null;
@@ -86,12 +88,72 @@ function renderValidationPanel() {
   const trainM = computeMetrics(TREE, trainRows, isReg);
   const testM = computeMetrics(TREE, testRows, isReg);
 
-  metricsEl.innerHTML = renderMetricsHtml(trainM, testM, isReg);
+  // Autocorrelation-leakage diagnostic: split the test set into leaky
+  // (within buffer of any train sample) and isolated (outside buffer).
+  const roles = getColumnRoles();
+  const hasCoords = !!(roles && (roles.x || roles.y || roles.z));
+  const bufferSection = document.getElementById('valBufferSection');
+  if (bufferSection) bufferSection.style.display = hasCoords ? '' : 'none';
+
+  let leakyHtml = '';
+  if (hasCoords && trainRows.length > 0 && testRows.length > 0) {
+    const coordCols = { x: roles.x, y: roles.y, z: roles.z };
+    const dists = computeTestDistances(testRows, trainRows, coordCols);
+    const summary = summarizeDistances(dists);
+    const bufferInput = document.getElementById('valBuffer');
+    const buffer = parseFloat(bufferInput?.value) || 0;
+    updateBufferHint(summary, buffer);
+    if (buffer > 0) {
+      const { leaky, isolated } = splitLeakyIsolated(dists, buffer);
+      const leakyM = computeMetrics(TREE, leaky, isReg);
+      const isoM = computeMetrics(TREE, isolated, isReg);
+      leakyHtml = renderLeakyIsolatedHtml(leakyM, isoM, isReg, buffer);
+    }
+  }
+
+  metricsEl.innerHTML = renderMetricsHtml(trainM, testM, isReg) + leakyHtml;
   confusionEl.innerHTML = isReg ? '' : renderConfusionMatrix(testM);
 
   // Hide the confusion section for regression.
   const confSection = document.getElementById('valConfusionSection');
   if (confSection) confSection.style.display = isReg ? 'none' : '';
+}
+
+function updateBufferHint(summary, buffer) {
+  const el = document.getElementById('valBufferHint');
+  if (!el) return;
+  if (!summary) { el.textContent = ''; return; }
+  const fmt = (v) => v.toFixed(2);
+  const hint = `min-dist percentiles — 25%: ${fmt(summary.q25)} · 50%: ${fmt(summary.median)} · 75%: ${fmt(summary.q75)}`;
+  const advice = buffer === 0
+    ? ' · set buffer above 0 to activate'
+    : '';
+  el.textContent = hint + advice;
+}
+
+function renderLeakyIsolatedHtml(leakyM, isoM, isReg, buffer) {
+  if (isReg) {
+    const leak = leakyM?.r2 ?? NaN;
+    const iso = isoM?.r2 ?? NaN;
+    return `
+      <div class="val-leaky-box">
+        <div class="val-section-label">Autocorrelation leakage (buffer = ${buffer})</div>
+        <div class="val-leaky-row"><span>Leaky test (≤ buffer)</span><span>R² ${isFinite(leak) ? leak.toFixed(3) : '—'} · n=${leakyM?.n ?? 0}</span></div>
+        <div class="val-leaky-row"><span>Isolated test (> buffer)</span><span>R² ${isFinite(iso) ? iso.toFixed(3) : '—'} · n=${isoM?.n ?? 0}</span></div>
+      </div>`;
+  }
+  const leak = leakyM ? leakyM.accuracy * 100 : NaN;
+  const iso = isoM ? isoM.accuracy * 100 : NaN;
+  const deltaStr = (isFinite(leak) && isFinite(iso))
+    ? `Δ = ${(leak - iso).toFixed(1)} pp`
+    : 'Δ = —';
+  return `
+    <div class="val-leaky-box">
+      <div class="val-section-label">Autocorrelation leakage (buffer = ${buffer})</div>
+      <div class="val-leaky-row"><span>Leaky test (≤ buffer)</span><span>${isFinite(leak) ? leak.toFixed(1) + '%' : '—'} · n=${leakyM?.n ?? 0}</span></div>
+      <div class="val-leaky-row"><span>Isolated test (> buffer)</span><span>${isFinite(iso) ? iso.toFixed(1) + '%' : '—'} · n=${isoM?.n ?? 0}</span></div>
+      <div class="val-leaky-delta">${deltaStr}</div>
+    </div>`;
 }
 
 function renderMetricsHtml(trainM, testM, isReg) {
