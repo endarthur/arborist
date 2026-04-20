@@ -31,6 +31,7 @@ const MENU_STRUCTURE = [
         { label: panelState('tree') + 'Tree Builder', action: () => togglePanel('tree') },
         { label: panelState('validation') + 'Validation', action: () => togglePanel('validation') },
         { label: panelState('importance') + 'Importance', action: () => togglePanel('importance') },
+        { label: panelState('scatter') + '3D Scatter', action: () => togglePanel('scatter') },
         { type: 'divider' },
         { label: 'Reset Layout', action: () => resetLayout() },
       ];
@@ -166,7 +167,7 @@ const DEFAULT_LAYOUT = {
           type: 'branch',
           data: [
             { type: 'leaf', data: { views: ['tree'], activeView: 'tree', id: 'group-tree' }, size: 600 },
-            { type: 'leaf', data: { views: ['validation', 'importance'], activeView: 'validation', id: 'group-validation' }, size: 320 },
+            { type: 'leaf', data: { views: ['validation', 'importance', 'scatter'], activeView: 'validation', id: 'group-validation' }, size: 320 },
           ],
           size: 1000,
         },
@@ -182,6 +183,7 @@ const DEFAULT_LAYOUT = {
     tree: { id: 'tree', contentComponent: 'tree', title: 'Tree Builder' },
     validation: { id: 'validation', contentComponent: 'validation', title: 'Validation' },
     importance: { id: 'importance', contentComponent: 'importance', title: 'Importance' },
+    scatter: { id: 'scatter', contentComponent: 'scatter', title: '3D Scatter' },
   },
   activeGroup: 'group-tree',
 };
@@ -198,6 +200,7 @@ function togglePanel(panelId) {
     tree: { title: 'Tree Builder', component: 'tree' },
     validation: { title: 'Validation', component: 'validation' },
     importance: { title: 'Importance', component: 'importance' },
+    scatter: { title: '3D Scatter', component: 'scatter' },
   };
   if (specs[panelId]) _dockviewApi.addPanel({ id: panelId, ...specs[panelId] });
 }

@@ -19,6 +19,7 @@ function initDockview() {
         case 'tree': element = getTreePanelElement(); break;
         case 'validation': element = getValidationPanelElement(); break;
         case 'importance': element = getImportancePanelElement(); break;
+        case 'scatter': element = getScatterPanelElement(); break;
         default:
           element = document.createElement('div');
           element.textContent = `Unknown panel component: ${options.name}`;

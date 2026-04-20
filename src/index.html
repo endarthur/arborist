@@ -265,12 +265,39 @@
   </div>
 </template>
 
+<template id="tpl-scatter-panel">
+  <div class="scatter-panel">
+    <div class="scatter-toolbar">
+      <label>Colour by</label>
+      <select id="scatterColorBy">
+        <option value="predicted">Predicted class</option>
+        <option value="true">True class</option>
+        <option value="misclass">Misclassification</option>
+      </select>
+    </div>
+    <div class="scatter-host" id="scatterHost"></div>
+    <div class="scatter-empty" id="scatterEmpty">Load a dataset and assign X/Y/Z columns.</div>
+  </div>
+</template>
+
 <!-- ═══════════════════════════════════════════════════════════════════════════
      vendor: dockview-core 5.2.0 (MIT) — https://github.com/mathuo/dockview
      exposes window["dockview-core"], auto-injects its own CSS on load
      ═══════════════════════════════════════════════════════════════════════════ -->
 <script>
 <!-- INLINE: vendor/dockview-core.min.js -->
+</script>
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     vendor: three.js r160 + @gcu/dee (3D scatter / drillhole visualisation)
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<script>
+<!-- INLINE: vendor/three.min.js -->
+</script>
+<script>
+<!-- INLINE: vendor/three-orbitcontrols.js -->
+</script>
+<script>
+<!-- INLINE: vendor/dee.js -->
 </script>
 <!-- ═══════════════════════════════════════════════════════════════════════════
      pollywog.js — Leapfrog .lfcalc builder (vendored, do not edit)
@@ -299,6 +326,7 @@
 <!-- INLINE: panels/data.js -->
 <!-- INLINE: panels/validation.js -->
 <!-- INLINE: panels/importance.js -->
+<!-- INLINE: panels/scatter.js -->
 <!-- INLINE: menubar.js -->
 <!-- INLINE: app.js -->
 </script>

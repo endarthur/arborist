@@ -986,6 +986,34 @@ body {
   color:var(--green-bright); font-weight:600; text-align:right;
 }
 
+/* ── 3D SCATTER PANEL ── */
+.scatter-panel {
+  width:100%; height:100%; display:flex; flex-direction:column;
+  background:var(--bg); position:relative; overflow:hidden;
+}
+.scatter-toolbar {
+  display:flex; align-items:center; gap:0.5rem;
+  padding:0.4rem 0.6rem; background:var(--surface);
+  border-bottom:1px solid var(--border); z-index:2;
+  font-family:var(--mono); font-size:0.62rem; color:var(--text-faint);
+}
+.scatter-toolbar label { text-transform:uppercase; letter-spacing:0.04em; }
+.scatter-toolbar select {
+  background:var(--bg); border:1px solid var(--border);
+  color:var(--text); padding:0.25rem 0.4rem; border-radius:4px;
+  font-family:var(--mono); font-size:0.62rem; outline:none;
+}
+.scatter-host {
+  flex:1; min-height:0; position:relative;
+}
+.scatter-host canvas { display:block; }
+.scatter-empty {
+  position:absolute; inset:32px 0 0 0;
+  display:flex; align-items:center; justify-content:center;
+  padding:1rem; font-family:var(--mono); font-size:0.7rem;
+  color:var(--text-faint); font-style:italic; pointer-events:none;
+}
+
 /* Toast */
 .toast {
   position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%);
