@@ -19,6 +19,7 @@ const MENU_STRUCTURE = [
       { label: 'Open Project…', action: () => showLoadDialog() },
       { label: 'Export Project as JSON', action: () => exportProject() },
       { label: 'Import Project from JSON', action: () => document.getElementById('importInput')?.click() },
+      { label: 'Import SQL CASE WHEN…', action: () => showSQLImportDialog() },
     ],
   },
   {
@@ -27,8 +28,11 @@ const MENU_STRUCTURE = [
     items: () => {
       const panelState = (id) => (_dockviewApi?.getPanel(id) ? '✓ ' : '  ');
       return [
-        { label: panelState('data') + 'Data', action: () => togglePanel('data') },
+        { label: panelState('dataset') + 'Dataset', action: () => togglePanel('dataset') },
+        { label: panelState('config') + 'Configuration', action: () => togglePanel('config') },
         { label: panelState('tree') + 'Tree Builder', action: () => togglePanel('tree') },
+        { label: panelState('inspector') + 'Inspector', action: () => togglePanel('inspector') },
+        { label: panelState('rules') + 'Rules', action: () => togglePanel('rules') },
         { label: panelState('validation') + 'Validation', action: () => togglePanel('validation') },
         { label: panelState('importance') + 'Importance', action: () => togglePanel('importance') },
         { label: panelState('scatter') + '3D Scatter', action: () => togglePanel('scatter') },
@@ -162,25 +166,36 @@ const DEFAULT_LAYOUT = {
     root: {
       type: 'branch',
       data: [
-        { type: 'leaf', data: { views: ['data'], activeView: 'data', id: 'group-data' }, size: 280 },
         {
           type: 'branch',
           data: [
-            { type: 'leaf', data: { views: ['tree'], activeView: 'tree', id: 'group-tree' }, size: 600 },
-            { type: 'leaf', data: { views: ['validation', 'importance', 'scatter'], activeView: 'validation', id: 'group-validation' }, size: 320 },
+            { type: 'leaf', data: { views: ['dataset'], activeView: 'dataset', id: 'group-dataset' }, size: 400 },
+            { type: 'leaf', data: { views: ['config'], activeView: 'config', id: 'group-config' }, size: 400 },
           ],
-          size: 1000,
+          size: 280,
         },
+        {
+          type: 'branch',
+          data: [
+            { type: 'leaf', data: { views: ['tree'], activeView: 'tree', id: 'group-tree' }, size: 700 },
+            { type: 'leaf', data: { views: ['validation', 'importance', 'scatter'], activeView: 'validation', id: 'group-bottom' }, size: 340 },
+          ],
+          size: 800,
+        },
+        { type: 'leaf', data: { views: ['inspector', 'rules'], activeView: 'inspector', id: 'group-inspector' }, size: 300 },
       ],
       size: 800,
     },
-    width: 1280,
+    width: 1380,
     height: 800,
     orientation: 'HORIZONTAL',
   },
   panels: {
-    data: { id: 'data', contentComponent: 'data', title: 'Data' },
+    dataset: { id: 'dataset', contentComponent: 'dataset', title: 'Dataset' },
+    config: { id: 'config', contentComponent: 'config', title: 'Configuration' },
     tree: { id: 'tree', contentComponent: 'tree', title: 'Tree Builder' },
+    inspector: { id: 'inspector', contentComponent: 'inspector', title: 'Inspector' },
+    rules: { id: 'rules', contentComponent: 'rules', title: 'Rules' },
     validation: { id: 'validation', contentComponent: 'validation', title: 'Validation' },
     importance: { id: 'importance', contentComponent: 'importance', title: 'Importance' },
     scatter: { id: 'scatter', contentComponent: 'scatter', title: '3D Scatter' },
@@ -196,8 +211,11 @@ function togglePanel(panelId) {
     return;
   }
   const specs = {
-    data: { title: 'Data', component: 'data' },
+    dataset: { title: 'Dataset', component: 'dataset' },
+    config: { title: 'Configuration', component: 'config' },
     tree: { title: 'Tree Builder', component: 'tree' },
+    inspector: { title: 'Inspector', component: 'inspector' },
+    rules: { title: 'Rules', component: 'rules' },
     validation: { title: 'Validation', component: 'validation' },
     importance: { title: 'Importance', component: 'importance' },
     scatter: { title: '3D Scatter', component: 'scatter' },

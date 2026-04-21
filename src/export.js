@@ -15,6 +15,10 @@ function extractRules(node, conditions = []) {
 
 function renderRules() {
   if (!TREE) return;
+  // Rules panel may be on an inactive tab — query via the cached root.
+  const root = typeof _rulesPanelElement !== 'undefined' ? _rulesPanelElement : null;
+  const box = root?.querySelector('#rulesBox');
+  if (!box) return;
   const rules = extractRules(TREE);
   const isReg = TREE_MODE === 'regression';
   let html = '';
@@ -31,8 +35,7 @@ function renderRules() {
     html += `\n  <span class="rule-if">THEN</span> <span class="rule-class">${pred}</span>`;
     html += ` <span class="rule-meta">(${meta})</span>\n\n`;
   }
-  document.getElementById('rulesBox').innerHTML = html;
-  document.getElementById('rulesSection').style.display = '';
+  box.innerHTML = html;
 }
 
 function exportRules(format) {

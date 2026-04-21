@@ -117,19 +117,11 @@ function loadData(csvText, config) {
   currentFilter = null;
 
   populateColumnRoleSelects();
-  const cats = DATA.headers.filter(h => DATA.types[h] === 'categorical');
-  const nums = DATA.headers.filter(h => DATA.types[h] === 'numeric');
   document.getElementById('configSection').style.display = '';
   document.getElementById('growBtn').disabled = false;
   document.getElementById('csvConfigBtn').style.display = '';
-  const statsBar = document.getElementById('statsBar');
-  statsBar.style.display = '';
-  statsBar.innerHTML = `
-    <span>Rows: <span class="stat-val">${DATA.rows.length}</span></span>
-    <span>Features: <span class="stat-val">${DATA.headers.length}</span></span>
-    <span>Numeric: <span class="stat-val">${nums.length}</span></span>
-    <span>Categorical: <span class="stat-val">${cats.length}</span></span>
-  `;
+  const configEmpty = document.getElementById('configEmpty');
+  if (configEmpty) configEmpty.style.display = 'none';
 
   // Show filter section
   document.getElementById('filterSection').style.display = '';

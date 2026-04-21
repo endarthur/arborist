@@ -62,19 +62,6 @@ function refreshAfterEdit() {
   // Reassign IDs and fix depths
   nodeIdCounter = 0;
   fixTreeMeta(TREE, 0);
-  // Update stats
-  const acc = treeAccuracy(TREE, TREE._rows, TREE._target);
-  const stats = countNodes(TREE);
-  const metricLabel = TREE_MODE === 'regression' ? 'R²' : 'Accuracy';
-  const metricVal = TREE_MODE === 'regression' ? acc.toFixed(3) : (acc * 100).toFixed(1) + '%';
-  document.getElementById('statsBar').innerHTML = `
-    <span>Rows: <span class="stat-val">${TREE._rows.length}</span></span>
-    <span>Nodes: <span class="stat-val">${stats.total}</span></span>
-    <span>Leaves: <span class="stat-val">${stats.leaves}</span></span>
-    <span>Depth: <span class="stat-val">${stats.maxDepth}</span></span>
-    <span>${metricLabel}: <span class="stat-val">${metricVal}</span></span>
-    <span>Edits: <span class="stat-val" style="color:var(--amber)">${undoStack.length}</span></span>
-  `;
   renderTree();
   renderRules();
   updateUndoBar();

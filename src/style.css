@@ -80,11 +80,20 @@ body {
 /* v1 .panel-left and .main previously lived inside a flex .app wrapper with
    fixed widths. Now each is the root of a dockview panel's content, so they
    must fill the slot dockview allocates. */
-.panel-left {
+.dataset-panel, .config-panel {
   width:100%; height:100%; background:var(--surface);
-  border-right:1px solid var(--border);
   display:flex; flex-direction:column; overflow-y:auto;
   scrollbar-width:thin; scrollbar-color:var(--border) transparent;
+}
+.config-empty {
+  padding:1rem; font-family:var(--mono); font-size:0.6rem;
+  color:var(--text-faint); font-style:italic; text-align:center;
+}
+.config-subhead {
+  font-family:var(--mono); font-size:0.58rem; font-weight:600;
+  color:var(--text-faint); text-transform:uppercase; letter-spacing:0.06em;
+  margin:0.8rem 0 0.4rem; padding-top:0.6rem; border-top:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
 }
 
 .logo {
@@ -692,43 +701,33 @@ body {
 .ws-nav-btn.ws-next { border-color:var(--green); color:var(--green-bright); }
 .ws-nav-btn.ws-next:hover { background:var(--green); color:#111; }
 
-/* ── RIGHT PANEL (overlay) ── */
-.panel-right {
-  position:absolute; top:1.85rem; right:0; bottom:0;
-  width:320px; background:var(--surface);
-  border-left:1px solid var(--border);
-  display:flex; flex-direction:column; overflow-y:auto;
+/* ── INSPECTOR PANEL (dockview panel since Phase 3.5) ── */
+.inspector-panel {
+  width:100%; height:100%; display:flex; flex-direction:column;
+  overflow-y:auto; background:var(--surface);
   scrollbar-width:thin; scrollbar-color:var(--border) transparent;
-  z-index:10; box-shadow:-4px 0 20px rgba(0,0,0,0.3);
-  transition:transform 0.2s;
 }
-.panel-right.collapsed { transform:translateX(100%); }
+.inspector-export-label {
+  font-family:var(--mono); font-size:0.52rem; color:var(--text-faint);
+  text-transform:uppercase; letter-spacing:0.06em;
+  margin-top:0.6rem; margin-bottom:0.25rem;
+}
+.inspector-hint {
+  padding:0.5rem 1rem;
+  font-family:var(--mono); font-size:0.58rem; color:var(--text-faint);
+  background:var(--surface2); border-bottom:1px dashed var(--border);
+  line-height:1.5;
+}
+.inspector-hint strong { color:var(--green-bright); font-weight:600; }
 
-.panel-right .resize-handle {
-  position:absolute; left:-4px; top:0; bottom:0; width:8px;
-  cursor:col-resize; z-index:11;
+/* ── RULES PANEL (tree-scoped rule text + export buttons) ── */
+.rules-panel {
+  width:100%; height:100%; display:flex; flex-direction:column;
+  overflow-y:auto; background:var(--surface);
+  scrollbar-width:thin; scrollbar-color:var(--border) transparent;
 }
-.panel-right .resize-handle:hover,
-.panel-right .resize-handle.active {
-  background:var(--green); opacity:0.3;
-}
-
-.panel-toggle {
-  position:absolute; top:50%; right:320px; z-index:11;
-  transform:translateY(-50%);
-  padding:0.4rem 0.2rem; border:1px solid var(--border); border-right:none;
-  border-radius:4px 0 0 4px;
-  background:var(--surface2); color:var(--text-dim); font-family:var(--mono);
-  font-size:0.6rem; cursor:pointer; transition:all 0.2s;
-  writing-mode:vertical-lr; letter-spacing:0.05em;
-}
-.panel-toggle:hover { border-color:var(--green); color:var(--text); background:var(--surface3); }
-
-.inspector-header {
-  padding:0.8rem 1rem; border-bottom:1px solid var(--border);
-}
-.inspector-header h3 {
-  font-family:var(--display); font-size:1rem; font-weight:700;
+.rules-section {
+  padding:0.7rem 1rem; border-bottom:1px solid var(--border);
 }
 
 .inspector-empty {

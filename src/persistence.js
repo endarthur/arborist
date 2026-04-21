@@ -165,13 +165,7 @@ function restoreProjectState(p) {
     const stats = countNodes(TREE);
     const metricLabel = TREE_MODE === 'regression' ? 'R²' : 'Accuracy';
     const metricVal = TREE_MODE === 'regression' ? metric.toFixed(3) : (metric * 100).toFixed(1) + '%';
-    document.getElementById('statsBar').innerHTML = `
-      <span>Rows: <span class="stat-val">${validRows.length}</span></span>
-      <span>Nodes: <span class="stat-val">${stats.total}</span></span>
-      <span>Leaves: <span class="stat-val">${stats.leaves}</span></span>
-      <span>Depth: <span class="stat-val">${stats.maxDepth}</span></span>
-      <span>${metricLabel}: <span class="stat-val">${metricVal}</span></span>
-    `;
+    showToast(`📂 Loaded project · ${validRows.length} rows · ${stats.total} nodes, ${stats.leaves} leaves, depth ${stats.maxDepth} · ${metricLabel} ${metricVal}`);
     setTimeout(zoomFit, 30);
   }
 }

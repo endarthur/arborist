@@ -15,8 +15,11 @@ function initDockview() {
     createComponent: (options) => {
       let element;
       switch (options.name) {
-        case 'data': element = getDataPanelElement(); break;
+        case 'dataset': element = getDatasetPanelElement(); break;
+        case 'config': element = getConfigPanelElement(); break;
         case 'tree': element = getTreePanelElement(); break;
+        case 'inspector': element = getInspectorPanelElement(); break;
+        case 'rules': element = getRulesPanelElement(); break;
         case 'validation': element = getValidationPanelElement(); break;
         case 'importance': element = getImportancePanelElement(); break;
         case 'scatter': element = getScatterPanelElement(); break;
@@ -60,7 +63,6 @@ function bootstrapApp() {
   initImportInputListener();
   initTreeWheelZoom();
   initTreePan();
-  initInspectorResize();
   // Populate the splash/sidebar saved-projects lists.
   refreshSavedLists();
 }

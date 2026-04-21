@@ -256,24 +256,11 @@ function applySQLImport() {
         const stats = countNodes(TREE);
         const metricLabel = TREE_MODE === 'regression' ? 'R²' : 'Accuracy';
         const metricVal = TREE_MODE === 'regression' ? metric.toFixed(3) : (metric * 100).toFixed(1) + '%';
-        document.getElementById('statsBar').innerHTML = `
-          <span>Rows: <span class="stat-val">${validRows.length}</span></span>
-          <span>Nodes: <span class="stat-val">${stats.total}</span></span>
-          <span>Leaves: <span class="stat-val">${stats.leaves}</span></span>
-          <span>Depth: <span class="stat-val">${stats.maxDepth}</span></span>
-          <span>${metricLabel}: <span class="stat-val">${metricVal}</span></span>
-          <span style="color:var(--amber);">imported</span>
-        `;
+        showToast(`📥 Imported SQL tree · ${validRows.length} rows · ${stats.total} nodes, ${stats.leaves} leaves, depth ${stats.maxDepth} · ${metricLabel} ${metricVal}`);
       }
     } else {
       const stats = countNodes(TREE);
-      document.getElementById('statsBar').style.display = '';
-      document.getElementById('statsBar').innerHTML = `
-        <span>Nodes: <span class="stat-val">${stats.total}</span></span>
-        <span>Leaves: <span class="stat-val">${stats.leaves}</span></span>
-        <span>Depth: <span class="stat-val">${stats.maxDepth}</span></span>
-        <span style="color:var(--amber);">no data — load CSV to evaluate</span>
-      `;
+      showToast(`📥 Imported SQL tree · ${stats.total} nodes, ${stats.leaves} leaves, depth ${stats.maxDepth} · load a CSV to evaluate`);
     }
 
     selectedNodeId = null;

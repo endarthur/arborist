@@ -247,20 +247,15 @@ function growTree() {
   const metricLabel = TREE_MODE === 'regression' ? 'R²' : 'Accuracy';
   const metricVal = TREE_MODE === 'regression' ? metric.toFixed(3) : (metric * 100).toFixed(1) + '%';
 
-  const filterTag = currentFilter ? `<span style="color:var(--amber);">filtered</span>` : '';
-  document.getElementById('statsBar').innerHTML = `
-    <span>Rows: <span class="stat-val">${validRows.length}</span></span>
-    <span>Nodes: <span class="stat-val">${stats.total}</span></span>
-    <span>Leaves: <span class="stat-val">${stats.leaves}</span></span>
-    <span>Depth: <span class="stat-val">${stats.maxDepth}</span></span>
-    <span>${metricLabel}: <span class="stat-val">${metricVal}</span></span>
-    <span>Time: <span class="stat-val">${elapsed}ms</span></span>
-    ${filterTag}
-  `;
+  const filterTag = currentFilter ? ' · filtered' : '';
+  showToast(
+    `🌱 Grew tree · ${validRows.length} rows · ${stats.total} nodes, ${stats.leaves} leaves, depth ${stats.maxDepth} · ` +
+    `${metricLabel} ${metricVal} · ${elapsed} ms${filterTag}`
+  );
 
   selectedNodeId = null;
   undoStack.length = 0;
-  document.getElementById('inspectorContent').innerHTML = '<div class="inspector-empty">Click a node in the tree to inspect it</div>';
+  renderInspectorDefault();
   const es = document.getElementById('emptyState');
   if (es) es.style.display = 'none';
   renderTree();

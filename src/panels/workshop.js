@@ -447,10 +447,8 @@ function selectNodeById(id) {
 }
 
 function openInspector() {
-  const panel = document.getElementById('panelRight');
-  if (panel) panel.style.transform = 'translateX(0)';
-  const toggle = document.getElementById('panelToggle');
-  if (toggle) toggle.textContent = '▶ Inspector';
+  // Inspector is a dockview panel now — open it if closed.
+  if (typeof ensurePanelOpen === 'function') ensurePanelOpen('inspector');
 }
 
 function startWorkshop() {

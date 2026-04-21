@@ -229,49 +229,6 @@ function initTreePan() {
 }
 
 // ═══════════════════════════════════════
-//  INSPECTOR PANEL: toggle + resize
-// ═══════════════════════════════════════
-function toggleInspector() {
-  const p = document.getElementById('panelRight');
-  const btn = document.getElementById('panelToggle');
-  if (!p || !btn) return;
-  p.classList.toggle('collapsed');
-  if (p.classList.contains('collapsed')) {
-    btn.textContent = '▶ Inspector';
-    btn.style.right = '0px';
-  } else {
-    btn.textContent = '◀ Inspector';
-    btn.style.right = p.offsetWidth + 'px';
-  }
-}
-
-// Inspector resize handle — called by app.js after tree panel mounts.
-function initInspectorResize() {
-  const panel = document.getElementById('panelRight');
-  const handle = document.getElementById('resizeHandle');
-  if (!panel || !handle) return;
-  let isResizing = false, startX, startW;
-
-  handle.addEventListener('pointerdown', function(e) {
-    isResizing = true; handle.classList.add('active');
-    handle.setPointerCapture(e.pointerId);
-    startX = e.clientX; startW = panel.offsetWidth;
-    e.preventDefault(); e.stopPropagation();
-  });
-  handle.addEventListener('pointermove', function(e) {
-    if (!isResizing) return;
-    const newW = Math.max(240, Math.min(600, startW - (e.clientX - startX)));
-    panel.style.width = newW + 'px';
-    const btn = document.getElementById('panelToggle');
-    if (btn) btn.style.right = newW + 'px';
-  });
-  handle.addEventListener('pointerup', function(e) {
-    isResizing = false; handle.classList.remove('active');
-    handle.releasePointerCapture(e.pointerId);
-  });
-}
-
-// ═══════════════════════════════════════
 //  INSPECTOR
 // ═══════════════════════════════════════
 function findNode(node, id) {
@@ -287,15 +244,31 @@ function selectNode(id) {
   document.querySelectorAll('.tree-node').forEach(g => {
     g.classList.toggle('selected', parseInt(g.dataset.id) === id);
   });
-  const p = document.getElementById('panelRight');
-  if (p.classList.contains('collapsed')) toggleInspector();
+  // Inspector is now its own dockview panel; if it's closed, surface it.
+  if (typeof ensurePanelOpen === 'function') ensurePanelOpen('inspector');
   renderInspector(id);
 }
 
 function deselectNode() {
   selectedNodeId = null;
   document.querySelectorAll('.tree-node').forEach(g => g.classList.remove('selected'));
-  document.getElementById('inspectorContent').innerHTML = '<div class="inspector-empty">Click a node in the tree to inspect it</div>';
+  renderInspectorDefault();
+}
+
+// Shown in the inspector whenever nothing is selected. If a tree exists we
+// render the root — it represents the full training set and its split is
+// usually what users want to see first — with a gentle hint that clicking
+// a node will drill down.
+function renderInspectorDefault() {
+  const el = document.getElementById('inspectorContent');
+  if (!el) return;
+  if (!TREE) {
+    el.innerHTML = '<div class="inspector-empty">Load a dataset and grow a tree to begin, or click a node here once one exists.</div>';
+    return;
+  }
+  renderInspector(TREE.id);
+  el.insertAdjacentHTML('afterbegin',
+    '<div class="inspector-hint">Showing the <strong>root node</strong> — click any node in the tree to drill in.</div>');
 }
 
 function renderInspector(id) {
