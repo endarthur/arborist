@@ -2,8 +2,7 @@
 //  LEAPFROG EXPORT
 // ═══════════════════════════════════════
 function showLfcalcDialog() {
-  if (!TREE) return;
-  document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
+  if (!TREE) { showToast('No tree to export'); return; }
 
   // Collect features used in splits
   const features = new Set();
@@ -14,13 +13,6 @@ function showLfcalcDialog() {
   })(TREE);
   const featureList = [...features].sort();
 
-  const overlay = document.createElement('div');
-  overlay.className = 'load-dialog-overlay';
-  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
-
-  const dialog = document.createElement('div');
-  dialog.className = 'lfcalc-dialog';
-
   const defaultCalcName = (TREE._target || 'prediction') + '_pred';
   const escAttr = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   const escHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -29,9 +21,10 @@ function showLfcalcDialog() {
     `<div class="lf-var-row"><label>${escHtml(f)}</label><input type="text" data-csv-name="${escAttr(f)}" value="${escAttr(f)}"></div>`
   ).join('');
 
-  dialog.innerHTML = `
-    <h3>🐸 Leapfrog Export</h3>
-    <div class="lf-hint">Map CSV column names to Leapfrog variable names. Edit to remap.</div>
+  const host = openFloatingPanel('lfcalc', { title: '🐸 Leapfrog Export', width: 480, height: 520 });
+  if (!host) return;
+  host.innerHTML = `
+    <div class="dialog-hint">Map CSV column names to Leapfrog variable names. Edit to remap.</div>
     <div class="lf-section">Variables</div>
     ${varsHtml}
     <div class="lf-section">Output</div>
@@ -39,13 +32,10 @@ function showLfcalcDialog() {
       <label>Calculation name</label>
       <input type="text" id="lfCalcName" value="${escAttr(defaultCalcName)}">
     </div>
-    <div class="lf-buttons">
-      <button class="lf-cancel" onclick="this.closest('.load-dialog-overlay').remove()">Cancel</button>
-      <button class="lf-export" onclick="exportLfcalc()">Export .lfcalc</button>
+    <div class="dialog-buttons">
+      <button class="dialog-btn" onclick="closeFloatingPanel('lfcalc')">Cancel</button>
+      <button class="dialog-btn dialog-btn-primary" onclick="exportLfcalc()">Export .lfcalc</button>
     </div>`;
-
-  overlay.appendChild(dialog);
-  document.body.appendChild(overlay);
 }
 
 function treeToLfcalc(node, varMap, calcName) {
@@ -85,16 +75,17 @@ function treeToLfcalc(node, varMap, calcName) {
 
 function exportLfcalc() {
   try {
-    const dialog = document.querySelector('.lfcalc-dialog');
+    const host = _floatingHosts['lfcalc'];
+    if (!host) return;
     const varMap = {};
-    dialog.querySelectorAll('.lf-var-row input[data-csv-name]').forEach(input => {
+    host.querySelectorAll('.lf-var-row input[data-csv-name]').forEach(input => {
       varMap[input.dataset.csvName] = input.value.trim() || input.dataset.csvName;
     });
-    const calcName = document.getElementById('lfCalcName').value.trim() || (TREE._target + '_pred');
+    const calcName = host.querySelector('#lfCalcName').value.trim() || (TREE._target + '_pred');
     const calcSet = treeToLfcalc(TREE, varMap, calcName);
     calcSet.downloadLfcalc('arborist_tree.lfcalc').then(() => {
       showToast('Leapfrog .lfcalc exported');
-      document.querySelector('.load-dialog-overlay')?.remove();
+      closeFloatingPanel('lfcalc');
     }).catch(err => {
       showToast('Export failed: ' + err.message);
     });

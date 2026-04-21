@@ -37,6 +37,7 @@ const MENU_STRUCTURE = [
         { label: panelState('importance') + 'Importance', action: () => togglePanel('importance') },
         { label: panelState('scatter') + '3D Scatter', action: () => togglePanel('scatter') },
         { type: 'divider' },
+        { label: 'Float active panel', action: () => floatActivePanel() },
         { label: 'Reset Layout', action: () => resetLayout() },
       ];
     },
@@ -227,4 +228,18 @@ function resetLayout() {
   if (!_dockviewApi) return;
   _dockviewApi.clear();
   _dockviewApi.fromJSON(DEFAULT_LAYOUT);
+}
+
+// Detach the currently-active panel into a floating window. Dockview also
+// supports drag-tab-out natively, but it's undiscoverable; this surfaces
+// the action.
+function floatActivePanel() {
+  if (!_dockviewApi) return;
+  const active = _dockviewApi.activePanel;
+  if (!active) { showToast('No active panel'); return; }
+  try {
+    _dockviewApi.addFloatingGroup(active, { width: 520, height: 440 });
+  } catch (e) {
+    showToast('Float failed: ' + e.message);
+  }
 }

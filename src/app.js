@@ -23,6 +23,12 @@ function initDockview() {
         case 'validation': element = getValidationPanelElement(); break;
         case 'importance': element = getImportancePanelElement(); break;
         case 'scatter': element = getScatterPanelElement(); break;
+        case 'floating-host': {
+          // options.params isn't populated at createComponent time; use the
+          // panel's id directly (openFloatingPanel keys hosts by panel id).
+          element = _floatingHosts[options.id] || document.createElement('div');
+          break;
+        }
         default:
           element = document.createElement('div');
           element.textContent = `Unknown panel component: ${options.name}`;
@@ -53,6 +59,39 @@ function ensurePanelOpen(panelId) {
     tree: { title: 'Tree Builder', component: 'tree' },
   };
   if (specs[panelId]) _dockviewApi.addPanel({ id: panelId, ...specs[panelId] });
+}
+
+// Long-form dialogs (SQL import, Leapfrog export, Help, etc.) open as
+// floating dockview panels so they don't block the tree. Each gets an empty
+// host <div> that the caller fills with content; closeFloatingPanel() hides
+// it. Hosts are tracked so reopens find the same element if still alive,
+// and cleaned up on actual panel disposal.
+const _floatingHosts = Object.create(null);
+
+function openFloatingPanel(id, { title, width = 520, height = 440 } = {}) {
+  if (!_dockviewApi) return null;
+  const existing = _dockviewApi.getPanel(id);
+  if (existing) {
+    existing.api.setActive();
+    return _floatingHosts[id];
+  }
+  const host = document.createElement('div');
+  host.className = 'floating-host';
+  _floatingHosts[id] = host;
+  const panel = _dockviewApi.addPanel({
+    id, title,
+    component: 'floating-host',
+    params: { hostId: id },
+    floating: { width, height },
+  });
+  panel?.api?.onDidDispose?.(() => { delete _floatingHosts[id]; });
+  return host;
+}
+
+function closeFloatingPanel(id) {
+  const p = _dockviewApi?.getPanel(id);
+  if (p) p.api.close();
+  delete _floatingHosts[id];
 }
 
 function bootstrapApp() {

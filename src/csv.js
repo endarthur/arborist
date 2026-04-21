@@ -423,12 +423,7 @@ const DELIM_LABELS = { ',': 'Comma (,)', '\t': 'Tab (⇥)', ';': 'Semicolon (;)'
 
 function showCSVConfig() {
   if (!csvConfig || !csvRawText) return;
-  document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
-
   const detected = csvConfig.detected;
-  const overlay = document.createElement('div');
-  overlay.className = 'load-dialog-overlay';
-  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
 
   const delimOptions = DELIMITERS.map(d => {
     const label = DELIM_LABELS[d] || d;
@@ -444,7 +439,6 @@ function showCSVConfig() {
     return `<option value="${d}"${sel}>${label}${det}</option>`;
   }).join('');
 
-  // Preview: first 3 data rows parsed with current settings
   const previewRows = DATA ? DATA.rows.slice(0, 3) : [];
   const previewCols = DATA ? DATA.headers.slice(0, 5) : [];
   const ellipsis = DATA && DATA.headers.length > 5 ? `<span style="color:var(--text-faint);font-size:0.5rem;">…+${DATA.headers.length - 5} more</span>` : '';
@@ -462,8 +456,9 @@ function showCSVConfig() {
   }
   previewHtml += '</table></div>';
 
-  overlay.innerHTML = `<div class="csv-config-dialog">
-    <h3>⚙ CSV Parsing</h3>
+  const host = openFloatingPanel('csv-config', { title: '⚙ CSV Parsing', width: 480, height: 520 });
+  if (!host) return;
+  host.innerHTML = `
     <div class="csv-cfg-row">
       <label>Delimiter</label>
       <select id="cfgDelimiter">${delimOptions}</select>
@@ -477,24 +472,20 @@ function showCSVConfig() {
       <select id="cfgDecimalSep">${decOptions}</select>
     </div>
     <div id="csvConfigPreview">${previewHtml}</div>
-    <div class="csv-cfg-buttons">
-      <button class="csv-cfg-reset" onclick="resetCSVConfig()">↺ Auto-detect</button>
-      <button class="csv-cfg-cancel" onclick="this.closest('.load-dialog-overlay').remove()">Cancel</button>
-      <button class="csv-cfg-apply" onclick="applyCSVConfig()">Apply & Re-parse</button>
-    </div>
-  </div>`;
+    <div class="dialog-buttons">
+      <button class="dialog-btn" onclick="resetCSVConfig()">↺ Auto-detect</button>
+      <button class="dialog-btn" onclick="closeFloatingPanel('csv-config')">Cancel</button>
+      <button class="dialog-btn dialog-btn-primary" onclick="applyCSVConfig()">Apply & Re-parse</button>
+    </div>`;
 
-  document.body.appendChild(overlay);
-
-  // Toggle custom delimiter row
-  const delimSel = document.getElementById('cfgDelimiter');
+  const delimSel = host.querySelector('#cfgDelimiter');
   delimSel.addEventListener('change', () => {
-    document.getElementById('cfgCustomDelimRow').style.display =
+    host.querySelector('#cfgCustomDelimRow').style.display =
       delimSel.value === '__custom__' ? '' : 'none';
     previewCSVConfig();
   });
-  document.getElementById('cfgDecimalSep').addEventListener('change', previewCSVConfig);
-  document.getElementById('cfgCustomDelim').addEventListener('input', previewCSVConfig);
+  host.querySelector('#cfgDecimalSep').addEventListener('change', previewCSVConfig);
+  host.querySelector('#cfgCustomDelim').addEventListener('input', previewCSVConfig);
 }
 
 function getCSVConfigFromDialog() {
@@ -548,7 +539,7 @@ function applyCSVConfig() {
   if (DATA && DATA.headers.includes(prevTarget)) {
     document.getElementById('targetSelect').value = prevTarget;
   }
-  document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
+  closeFloatingPanel('csv-config');
   showToast(`Re-parsed: ${DELIM_LABELS[config.delimiter] || config.delimiter}, decimal "${config.decimalSep}"`);
 }
 
@@ -559,7 +550,7 @@ function resetCSVConfig() {
   if (DATA && DATA.headers.includes(prevTarget)) {
     document.getElementById('targetSelect').value = prevTarget;
   }
-  document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
+  closeFloatingPanel('csv-config');
   showToast('Re-parsed with auto-detected settings');
 }
 

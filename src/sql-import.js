@@ -2,32 +2,24 @@
 //  SQL CASE WHEN IMPORT
 // ═══════════════════════════════════════
 function showSQLImportDialog() {
-  document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
-  const overlay = document.createElement('div');
-  overlay.className = 'load-dialog-overlay';
-  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
-
-  const dialog = document.createElement('div');
-  dialog.className = 'sql-import-dialog';
-  dialog.innerHTML = `
-    <h3>📥 Import SQL CASE WHEN</h3>
-    <div class="sid-hint">
+  const host = openFloatingPanel('sql-import', { title: '📥 Import SQL CASE WHEN', width: 540, height: 460 });
+  if (!host) return;
+  host.innerHTML = `
+    <div class="dialog-hint">
       Paste a CASE WHEN block. Supports conditions like:<br>
       <code>feature &lt;= 58.5</code> · <code>feature &gt; 10</code> · <code>feature = 'oxide'</code> · <code>feature &lt;&gt; 'fresh'</code>
     </div>
-    <textarea id="sqlImportText" spellcheck="false" placeholder="CASE
+    <textarea id="sqlImportText" class="dialog-textarea" spellcheck="false" placeholder="CASE
   WHEN Fe_pct <= 58 AND weathering = 'fresh' THEN 'BIF'
   WHEN Fe_pct > 58 AND SiO2_pct <= 4.2 THEN 'HG_oxide'
   ELSE 'unknown'
 END"></textarea>
-    <div class="sid-error" id="sqlImportError"></div>
-    <div class="sid-buttons">
-      <button class="sid-cancel" onclick="this.closest('.load-dialog-overlay').remove()">Cancel</button>
-      <button class="sid-apply" onclick="applySQLImport()">🌳 Build Tree</button>
+    <div class="dialog-error" id="sqlImportError"></div>
+    <div class="dialog-buttons">
+      <button class="dialog-btn" onclick="closeFloatingPanel('sql-import')">Cancel</button>
+      <button class="dialog-btn dialog-btn-primary" onclick="applySQLImport()">🌳 Build Tree</button>
     </div>`;
-  overlay.appendChild(dialog);
-  document.body.appendChild(overlay);
-  dialog.querySelector('textarea').focus();
+  host.querySelector('textarea').focus();
 }
 
 function parseSQLCaseWhen(sql) {
@@ -272,7 +264,7 @@ function applySQLImport() {
     updateUndoBar();
     setTimeout(zoomFit, 30);
 
-    document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
+    closeFloatingPanel('sql-import');
     showToast(`📥 Imported ${rules.length} rules as tree`);
 
   } catch (err) {

@@ -2,15 +2,9 @@
 //  HELP
 // ═══════════════════════════════════════
 function showHelp() {
-  document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
-  const overlay = document.createElement('div');
-  overlay.className = 'load-dialog-overlay';
-  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
-
-  const dialog = document.createElement('div');
-  dialog.className = 'help-dialog';
-  dialog.innerHTML = `
-    <h3>🌳 Arborist — Guide</h3>
+  const host = openFloatingPanel('help', { title: '🌳 Arborist — Guide', width: 600, height: 600 });
+  if (!host) return;
+  host.innerHTML = `
     <div class="help-sub">Decision Tree Cultivator · v0.1</div>
 
     <h4>Workflow</h4>
@@ -106,24 +100,13 @@ function showHelp() {
       Pedregosa, F. et al. (2011). Scikit-learn: Machine Learning in Python. <em>Journal of Machine Learning Research</em>, 12, pp. 2825–2830.
     </p>
     <p style="color:var(--text-faint); font-size:0.58rem; margin-top:0.6rem;">Arborist v0.1.0 · Geoscientific Chaos Union · © 2026 Arthur Endlein · MIT License</p>
-
-    <button class="help-close" onclick="this.closest('.load-dialog-overlay').remove()">Close</button>
   `;
-  overlay.appendChild(dialog);
-  document.body.appendChild(overlay);
 }
 
 function showParamHelp() {
-  document.querySelectorAll('.load-dialog-overlay').forEach(d => d.remove());
-  const overlay = document.createElement('div');
-  overlay.className = 'load-dialog-overlay';
-  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
-
-  const dialog = document.createElement('div');
-  dialog.className = 'help-dialog';
-  dialog.style.width = '420px';
-  dialog.innerHTML = `
-    <h3>⚙️ Tree Parameters</h3>
+  const host = openFloatingPanel('param-help', { title: '⚙️ Tree Parameters', width: 460, height: 520 });
+  if (!host) return;
+  host.innerHTML = `
     <div class="help-sub">What each configuration option does</div>
 
     <h4>Target</h4>
@@ -153,10 +136,6 @@ function showParamHelp() {
       <li>This prevents splits where one of the two children would be too small</li>
       <li><strong>Default: 10</strong></li>
     </ul>
-
-    <button class="help-close" onclick="this.closest('.load-dialog-overlay').remove()">Close</button>
   `;
-  overlay.appendChild(dialog);
-  document.body.appendChild(overlay);
 }
 
