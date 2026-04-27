@@ -114,6 +114,7 @@ function loadData(csvText, config) {
   DATA = parseCSV(csvText, config);
   if (DATA.rows.length === 0) { alert('No data rows found.'); return; }
   DATA._origTypes = { ...DATA.types };
+  DATA._excludedFeatures = new Set();
   currentFilter = null;
 
   populateColumnRoleSelects();
@@ -169,13 +170,28 @@ function renderDataSummary() {
   html += `</div>`;
 
   html += '<div class="ds-cols">';
+  const excluded = DATA._excludedFeatures || new Set();
   for (const h of DATA.headers) {
     const isNum = DATA.types[h] === 'numeric';
     const canToggle = DATA._origTypes[h] === 'numeric';
     const miss = DATA.missing[h] || 0;
     const missPct = nRows ? (miss / nRows) * 100 : 0;
     const role = roleFor(h);
+    const isExcluded = !role && excluded.has(h);
     const roleBadge = role ? `<span class="ds-role ds-role-${role}" title="assigned role">${role === 'target' ? 'tgt' : role}</span>` : '';
+
+    // Feature inclusion toggle: only meaningful when the column has no role
+    // (role-claimed columns are excluded from the feature set anyway).
+    let featToggle = '';
+    if (!role) {
+      const cls = isExcluded ? 'ds-feat-toggle ds-feat-skip' : 'ds-feat-toggle';
+      const title = isExcluded
+        ? 'Excluded — not used as a tree feature. Click to include.'
+        : 'Used as a tree feature. Click to exclude from training.';
+      const label = isExcluded ? 'skip' : '✓';
+      featToggle = `<span class="${cls}" title="${title}"
+        onclick="toggleFeatureExclusion('${h.replace(/'/g, "\\'")}')">${label}</span>`;
+    }
 
     let stats = '';
     if (isNum) {
@@ -195,10 +211,12 @@ function renderDataSummary() {
 
     const hEsc = escHtml(h);
     const hAttr = hEsc.replace(/'/g, '&#39;');
-    html += `<div class="ds-col" data-col="${hAttr}">
+    const colCls = 'ds-col' + (isExcluded ? ' ds-col-excluded' : '');
+    html += `<div class="${colCls}" data-col="${hAttr}">
       <div class="ds-col-head">
         <span class="ds-col-name" title="${hAttr}">${hEsc}</span>
         ${roleBadge}
+        ${featToggle}
         <span class="ds-col-type${canToggle ? ' ds-col-toggle' : ''}"
           ${canToggle ? `onclick="toggleColType('${h.replace(/'/g, "\\'")}')" title="Click to toggle numeric ↔ categorical"` : `title="${isNum ? 'numeric' : 'categorical (text)'}"`}
         >${isNum ? 'num #' : 'cat ●'}</span>

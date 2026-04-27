@@ -82,12 +82,28 @@ function getColumnRoles() {
   const z = document.getElementById('zSelect')?.value || null;
   const dhid = document.getElementById('dhidSelect')?.value || null;
   const claimed = new Set([target, x, y, z, dhid].filter(Boolean));
-  const features = DATA.headers.filter(h => !claimed.has(h));
+  const excluded = DATA._excludedFeatures || new Set();
+  const features = DATA.headers.filter(h => !claimed.has(h) && !excluded.has(h));
   return { target, x, y, z, dhid, features };
 }
 
 // onchange handler on each role <select>. Publishes 'columns' and invalidates
 // the current train/test partition (recomputed lazily by the validation panel).
 function onColumnRolesChanged() {
+  // Role badges in the Dataset summary depend on current role values; refresh
+  // so the picture stays consistent when the user picks a new target / coord.
+  if (typeof renderDataSummary === 'function') renderDataSummary();
+  publish('columns', getColumnRoles());
+}
+
+// Per-column "exclude as feature" toggle. Role-claimed columns are already
+// excluded from the feature set by getColumnRoles(); this is the override for
+// everything else (the columns that would otherwise be features).
+function toggleFeatureExclusion(col) {
+  if (!DATA) return;
+  if (!DATA._excludedFeatures) DATA._excludedFeatures = new Set();
+  if (DATA._excludedFeatures.has(col)) DATA._excludedFeatures.delete(col);
+  else DATA._excludedFeatures.add(col);
+  if (typeof renderDataSummary === 'function') renderDataSummary();
   publish('columns', getColumnRoles());
 }

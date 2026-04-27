@@ -99,6 +99,11 @@ function buildProjectPayload() {
       minSplit: document.getElementById('minSplit').value,
     },
     types: DATA ? { ...DATA.types } : {},
+    excludedFeatures: DATA && DATA._excludedFeatures ? [...DATA._excludedFeatures] : [],
+    applyPresets: (typeof _applyPresets !== 'undefined' && _applyPresets)
+      ? Object.fromEntries(_applyPresets) : {},
+    standaloneSettings: (typeof _standaloneSettings !== 'undefined' && _standaloneSettings)
+      ? { ..._standaloneSettings } : null,
     filter: currentFilter ? currentFilter.expr : null,
     csv: reconstructCSV(),
     tree: TREE ? serializeTree(TREE) : null,
@@ -115,6 +120,21 @@ function restoreProjectState(p) {
     for (const h of DATA.headers) {
       if (p.types[h]) DATA.types[h] = p.types[h];
     }
+  }
+  // Restore feature exclusions
+  if (DATA) {
+    const ex = Array.isArray(p.excludedFeatures) ? p.excludedFeatures : [];
+    DATA._excludedFeatures = new Set(ex.filter(c => DATA.headers.includes(c)));
+  }
+  // Restore Apply-Tree mapping presets (keyed by header signature)
+  if (typeof _applyPresets !== 'undefined' && p.applyPresets && typeof p.applyPresets === 'object') {
+    _applyPresets = new Map(Object.entries(p.applyPresets));
+  }
+  // Restore Standalone HTML export settings (title / description / author / etc.)
+  if (typeof _standaloneSettings !== 'undefined' && p.standaloneSettings && typeof p.standaloneSettings === 'object') {
+    _standaloneSettings = { ..._standaloneSettings, ...p.standaloneSettings };
+  }
+  if (p.types && DATA) {
     renderDataSummary();
     // Refresh target select with restored types
     const sel = document.getElementById('targetSelect');
@@ -151,8 +171,9 @@ function restoreProjectState(p) {
 
   if (p.tree) {
     TREE = deserializeTree(p.tree, DATA.rows);
-    const target = p.config?.target || document.getElementById('targetSelect').value;
-    const features = DATA.headers.filter(h => h !== target);
+    const roles = getColumnRoles();
+    const target = roles?.target || p.config?.target || document.getElementById('targetSelect').value;
+    const features = roles?.features || DATA.headers.filter(h => h !== target);
     const validRows = DATA.rows.filter(r => r[target] !== '' && r[target] !== 'NA');
     TREE._target = target; TREE._features = features;
     TREE._rows = validRows; TREE._mode = TREE_MODE;

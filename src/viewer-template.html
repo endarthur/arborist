@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2">
+<title><!-- TITLE --></title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Literata:ital,wght@0,400;0,700;0,900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+<!-- INLINE: viewer-style.css -->
+</style>
+</head>
+<body>
+
+<header class="vw-header">
+  <div class="vw-brand">
+    <span class="vw-brand-mark">Arborist</span>
+    <span class="vw-brand-sep">·</span>
+    <span>standalone predictor</span>
+  </div>
+  <div id="vw-meta"></div>
+</header>
+
+<div id="vw-description" class="vw-description" style="display:none;"></div>
+
+<main class="vw-layout">
+  <section class="vw-tree-wrap">
+    <div class="vw-tree-toolbar">
+      <span class="vw-tree-title">Tree</span>
+      <button class="vw-tb-btn" onclick="vw.exportSvg()" title="Download tree as SVG (light theme)">SVG</button>
+      <button class="vw-tb-btn" onclick="vw.exportPng()" title="Download tree as PNG (light theme)">PNG</button>
+      <span class="vw-tb-sep" aria-hidden="true">|</span>
+      <button class="vw-tb-btn vw-tb-theme" onclick="vw.toggleTheme()" id="vw-theme-btn" title="Toggle light / dark theme">◐</button>
+      <button class="vw-tb-btn" onclick="vw.zoomFit()" title="Fit tree to view">Fit</button>
+      <button class="vw-tb-btn" onclick="vw.zoomIn()" title="Zoom in">+</button>
+      <button class="vw-tb-btn" onclick="vw.zoomOut()" title="Zoom out">−</button>
+      <span class="vw-zoom-level" id="vw-zoom-level">100%</span>
+    </div>
+    <div id="vw-tree-host" class="vw-tree-host">
+      <div class="vw-tree-stage" id="vw-tree-stage"></div>
+    </div>
+  </section>
+
+  <aside class="vw-side">
+    <div class="vw-card vw-card-apply">
+      <div class="vw-card-label">Apply</div>
+      <button class="vw-btn vw-btn-primary vw-btn-block" onclick="vw.openApply()">Apply to dataset</button>
+    </div>
+
+    <div class="vw-card">
+      <div class="vw-card-label">Inspector</div>
+      <div id="vw-inspector"></div>
+    </div>
+
+    <div class="vw-card">
+      <div class="vw-card-label">Export rules</div>
+      <div class="vw-btn-grid">
+        <button class="vw-btn" onclick="vw.copyText('text')">Rules</button>
+        <button class="vw-btn" onclick="vw.copyText('python')">Python</button>
+        <button class="vw-btn" onclick="vw.copyText('excel')">Excel</button>
+        <button class="vw-btn" onclick="vw.copyText('sql')">SQL</button>
+        <button class="vw-btn vw-btn-wide" onclick="vw.downloadMimicIo()">mimic-io JSON</button>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<footer class="vw-footer">
+  <span>Arborist <span class="vw-footer-sep">·</span> standalone predictor</span>
+  <span class="vw-footer-target" id="vw-footer-target"></span>
+</footer>
+
+<dialog id="vw-apply-dialog" class="vw-dialog">
+  <div class="vw-dialog-head">
+    <span>Apply tree to dataset</span>
+    <button class="vw-dialog-close" onclick="vw.closeApply()" aria-label="Close">×</button>
+  </div>
+  <div class="vw-dialog-body" id="vw-apply-body"></div>
+</dialog>
+
+<!-- Tree + metadata payload (replaced at export time by Arborist) -->
+<script id="arborist-payload" type="application/json"><!-- PAYLOAD --></script>
+
+<!-- Predict worker source (read as text; spawned via Blob URL) -->
+<script type="text/js-worker" id="predict-worker">
+<!-- INLINE: predict-worker.js -->
+</script>
+
+<!-- Viewer logic -->
+<script>
+<!-- INLINE: viewer-bundle.js -->
+</script>
+
+</body>
+</html>

@@ -63,9 +63,12 @@ const MENU_STRUCTURE = [
       { label: 'Excel IF', action: () => exportRules('excel') },
       { label: 'SQL CASE WHEN', action: () => exportRules('sql') },
       { label: 'CSV with Predictions', action: () => exportCSVPredictions() },
+      { label: 'Apply to External Dataset…', action: () => showApplyTreeDialog() },
       { type: 'divider' },
       { label: 'mimic-io JSON (sklearn)', action: () => exportMimicIo() },
       { label: 'Leapfrog .lfcalc', action: () => showLfcalcDialog() },
+      { type: 'divider' },
+      { label: 'Standalone HTML…', action: () => showStandaloneExportDialog() },
     ],
   },
   {

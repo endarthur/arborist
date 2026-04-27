@@ -164,8 +164,10 @@
         <button class="export-btn" onclick="exportRules('sql')">🗄 SQL CASE</button>
         <button class="export-btn" onclick="exportCSVPredictions()">📁 CSV</button>
         <button class="export-btn" onclick="exportMimicIo()">🔗 mimic-io</button>
+        <button class="export-btn" onclick="showStandaloneExportDialog()">📦 HTML</button>
       </div>
       <div class="export-grid export-grid-import">
+        <button class="export-btn import-btn" onclick="showApplyTreeDialog()">🌲 Apply to Dataset</button>
         <button class="export-btn import-btn" onclick="showSQLImportDialog()">📥 Import SQL</button>
       </div>
     </div>
@@ -267,6 +269,8 @@
 <!-- INLINE: panels/tree.js -->
 <!-- INLINE: bonsai.js -->
 <!-- INLINE: export.js -->
+<!-- INLINE: apply-tree.js -->
+<!-- INLINE: standalone-export.js -->
 <!-- INLINE: panels/help.js -->
 <!-- INLINE: panels/workshop.js -->
 <!-- INLINE: sql-import.js -->
@@ -285,5 +289,20 @@
 <!-- INLINE: menubar.js -->
 <!-- INLINE: app.js -->
 </script>
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     predict-worker source — read as text and spawned via Blob URL by
+     apply-tree.js. type="text/js-worker" prevents the browser from executing
+     it as a normal script.
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<script type="text/js-worker" id="predict-worker">
+<!-- INLINE: predict-worker.js -->
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     Standalone-viewer template — the build embeds the viewer's full HTML
+     (with INLINE'd CSS + worker + JS bundle) here as base64. Read at export
+     time, decoded, payload injected, downloaded.
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- VIEWER_TEMPLATE_B64 -->
 </body>
 </html>
