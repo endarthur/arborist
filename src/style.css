@@ -77,6 +77,54 @@ body {
   flex:1; position:relative; min-width:0;
 }
 
+/* ── DOCKVIEW THEME OVERRIDES ── */
+/* Re-skin dockview-theme-dark to match Arborist's palette and typography. */
+.dockview-theme-dark {
+  --dv-tabs-and-actions-container-background-color: var(--surface);
+  --dv-tabs-and-actions-container-height: 28px;
+  --dv-tabs-and-actions-container-font-size: 0.65rem;
+  --dv-tab-font-size: 0.65rem;
+  --dv-tab-divider-color: var(--border);
+  --dv-tabs-container-scrollbar-color: var(--border);
+  --dv-scrollbar-background-color: var(--border);
+
+  --dv-activegroup-visiblepanel-tab-background-color: var(--bg);
+  --dv-activegroup-visiblepanel-tab-color: var(--green-bright);
+  --dv-activegroup-hiddenpanel-tab-background-color: var(--surface);
+  --dv-activegroup-hiddenpanel-tab-color: var(--text-dim);
+  --dv-inactivegroup-visiblepanel-tab-background-color: var(--bg);
+  --dv-inactivegroup-visiblepanel-tab-color: var(--text-dim);
+  --dv-inactivegroup-hiddenpanel-tab-background-color: var(--surface);
+  --dv-inactivegroup-hiddenpanel-tab-color: var(--text-faint);
+
+  --dv-group-view-background-color: var(--bg);
+  --dv-paneview-active-outline-color: var(--green);
+  --dv-paneview-header-border-color: var(--border);
+
+  --dv-sash-color: var(--border);
+  --dv-active-sash-color: var(--green);
+  --dv-active-sash-transition-delay: 0s;
+  --dv-active-sash-transition-duration: 0.15s;
+  --dv-separator-border: var(--border);
+
+  --dv-drag-over-background-color: var(--green-dim);
+  --dv-drag-over-border-color: var(--green);
+  --dv-icon-hover-background-color: var(--surface3);
+
+  --dv-floating-box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --dv-border-radius: 0;
+}
+/* Tab text uses the app's monospace font for consistency with the menubar. */
+.dockview-theme-dark .dv-tab,
+.dockview-theme-dark .dv-default-tab {
+  font-family: var(--mono);
+  letter-spacing: 0.02em;
+}
+/* Underline the active tab in the focused group with the Arborist green. */
+.dockview-theme-dark .dv-groupview.dv-active-group .dv-tab.dv-active-tab {
+  box-shadow: inset 0 -2px 0 var(--green);
+}
+
 /* v1 .panel-left and .main previously lived inside a flex .app wrapper with
    fixed widths. Now each is the root of a dockview panel's content, so they
    must fill the slot dockview allocates. */
@@ -280,30 +328,70 @@ body {
 
 /* ── DATA SUMMARY ── */
 .data-summary {
-  margin-top:0.5rem; font-family:var(--mono); font-size:0.58rem;
-  color:var(--text-dim); line-height:1.6;
+  margin-top:0.5rem; font-family:var(--mono); font-size:0.6rem;
+  color:var(--text-dim); line-height:1.5;
 }
-.data-summary .ds-row {
-  display:flex; justify-content:space-between; padding:0.15rem 0;
+.ds-overview {
+  display:flex; flex-wrap:wrap; gap:0.25rem 0.8rem;
+  padding:0.35rem 0.15rem; margin-bottom:0.4rem;
   border-bottom:1px solid var(--border);
+  font-size:0.58rem; color:var(--text-faint);
 }
-.data-summary .ds-label { color:var(--text-faint); }
-.data-summary .ds-val { color:var(--green-bright); font-weight:600; }
-.data-summary .ds-cols {
-  margin-top:0.3rem; max-height:100px; overflow-y:auto; scrollbar-width:thin;
+.ds-overview span { white-space:nowrap; }
+.ds-overview-miss { color:var(--amber) !important; }
+.ds-cols {
+  display:flex; flex-direction:column; gap:0.2rem;
+  max-height:360px; overflow-y:auto;
+  scrollbar-width:thin; scrollbar-color:var(--border) transparent;
 }
-.data-summary .ds-col {
-  display:flex; align-items:center; gap:0.2rem; padding:0.1rem 0.2rem;
-  font-size:0.55rem;
+.ds-col {
+  padding:0.3rem 0.35rem; background:var(--bg);
+  border:1px solid var(--border); border-radius:4px;
+  display:flex; flex-direction:column; gap:0.18rem;
 }
-.data-summary .ds-col:nth-child(even) { background:var(--surface2); }
-.data-summary .ds-col-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.data-summary .ds-col-type { color:var(--cyan); min-width:1em; text-align:center; }
-.data-summary .ds-col-toggle {
-  cursor:pointer; border-radius:3px; padding:0 0.2rem;
-  transition:all 0.15s;
+.ds-col-head {
+  display:flex; align-items:center; gap:0.35rem;
 }
-.data-summary .ds-col-toggle:hover { background:var(--cyan); color:var(--bg); }
+.ds-col-name {
+  flex:1; color:var(--text); font-weight:600;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.ds-col-type {
+  font-size:0.52rem; color:var(--cyan);
+  padding:0.05rem 0.3rem; border-radius:3px;
+  background:var(--cyan-dim);
+}
+.ds-col-type.ds-col-toggle {
+  cursor:pointer; transition:all 0.15s;
+}
+.ds-col-type.ds-col-toggle:hover {
+  background:var(--cyan); color:var(--bg);
+}
+.ds-role {
+  font-size:0.5rem; font-weight:700; color:var(--green-bright);
+  background:var(--green-dim); padding:0.05rem 0.3rem; border-radius:3px;
+  text-transform:uppercase; letter-spacing:0.04em;
+}
+.ds-role-x, .ds-role-y, .ds-role-z { color:var(--blue); background:var(--blue-dim); }
+.ds-role-dhid { color:var(--purple); background:rgba(138,122,191,0.15); }
+.ds-col-body {
+  display:flex; align-items:center; gap:0.4rem;
+  font-size:0.55rem; color:var(--text-faint);
+}
+.ds-stat { white-space:nowrap; }
+.ds-stat-top {
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  max-width:8rem;
+}
+.ds-miss {
+  display:inline-flex; align-items:center; gap:0.25rem;
+  margin-left:auto;
+}
+.ds-miss-fill {
+  display:inline-block; height:4px; min-width:3px;
+  background:var(--amber); border-radius:2px;
+}
+.ds-miss-val { color:var(--amber); font-weight:600; font-size:0.5rem; }
 
 /* ── ROW FILTER ── */
 .filter-section {
