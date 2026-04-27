@@ -8,5 +8,8 @@ function getDatasetPanelElement() {
   if (_datasetPanelElement) return _datasetPanelElement;
   const tpl = document.getElementById('tpl-dataset-panel');
   _datasetPanelElement = tpl.content.firstElementChild.cloneNode(true);
+  // Re-render the summary when column roles change so role badges reflect
+  // the current assignment (target / X / Y / Z / dhid).
+  subscribe('columns', () => renderDataSummary());
   return _datasetPanelElement;
 }

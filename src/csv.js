@@ -145,32 +145,113 @@ function loadData(csvText, config) {
 function renderDataSummary() {
   if (!DATA) return;
   const ds = document.getElementById('dataSummary');
+  if (!ds) return;
+  const nRows = DATA.rows.length;
   const nums = DATA.headers.filter(h => DATA.types[h] === 'numeric');
   const cats = DATA.headers.filter(h => DATA.types[h] === 'categorical');
   const totalMissing = Object.values(DATA.missing).reduce((a, b) => a + b, 0);
-  let dsHtml = '<div class="data-summary">';
-  dsHtml += `<div class="ds-row"><span class="ds-label">Rows</span><span class="ds-val">${DATA.rows.length}</span></div>`;
-  dsHtml += `<div class="ds-row"><span class="ds-label">Columns</span><span class="ds-val">${DATA.headers.length}</span></div>`;
-  dsHtml += `<div class="ds-row"><span class="ds-label">Numeric</span><span class="ds-val">${nums.length}</span></div>`;
-  dsHtml += `<div class="ds-row"><span class="ds-label">Categorical</span><span class="ds-val">${cats.length}</span></div>`;
-  if (totalMissing > 0) {
-    dsHtml += `<div class="ds-row"><span class="ds-label" style="color:var(--amber)">Missing</span><span class="ds-val" style="color:var(--amber)">${totalMissing}</span></div>`;
-  }
-  dsHtml += '<div class="ds-cols">';
+  const roles = (typeof getColumnRoles === 'function') ? getColumnRoles() : null;
+  const roleFor = (h) => {
+    if (!roles) return null;
+    if (roles.target === h) return 'target';
+    if (roles.x === h) return 'x';
+    if (roles.y === h) return 'y';
+    if (roles.z === h) return 'z';
+    if (roles.dhid === h) return 'dhid';
+    return null;
+  };
+
+  let html = '<div class="data-summary">';
+  html += `<div class="ds-overview">`;
+  html += `<span>${nRows} rows · ${DATA.headers.length} cols</span>`;
+  html += `<span>${nums.length} num · ${cats.length} cat</span>`;
+  if (totalMissing > 0) html += `<span class="ds-overview-miss">${totalMissing} missing</span>`;
+  html += `</div>`;
+
+  html += '<div class="ds-cols">';
   for (const h of DATA.headers) {
     const isNum = DATA.types[h] === 'numeric';
     const canToggle = DATA._origTypes[h] === 'numeric';
     const miss = DATA.missing[h] || 0;
-    const missTag = miss > 0 ? `<span style="color:var(--amber);font-size:0.48rem;" title="${miss} missing values">${miss}?</span>` : '';
-    dsHtml += `<div class="ds-col">
-      <span class="ds-col-name">${h}</span>${missTag}
-      <span class="ds-col-type${canToggle ? ' ds-col-toggle' : ''}"
-        ${canToggle ? `onclick="toggleColType('${h.replace(/'/g, "\\'")}')" title="Click to toggle numeric ↔ categorical"` : `title="${isNum ? 'numeric' : 'categorical (text)'}"`}
-      >${isNum ? 'num #' : 'cat ●'}</span>
+    const missPct = nRows ? (miss / nRows) * 100 : 0;
+    const role = roleFor(h);
+    const roleBadge = role ? `<span class="ds-role ds-role-${role}" title="assigned role">${role === 'target' ? 'tgt' : role}</span>` : '';
+
+    let stats = '';
+    if (isNum) {
+      const s = numericStats(DATA.rows, h);
+      if (s) stats = `<span class="ds-stat">${fmtStat(s.min)}…${fmtStat(s.max)}</span><span class="ds-stat">μ ${fmtStat(s.mean)}</span>`;
+    } else {
+      const s = categoricalStats(DATA.rows, h);
+      if (s) stats = `<span class="ds-stat">${s.nUnique} unique</span><span class="ds-stat ds-stat-top" title="most frequent: ${s.topVal} (${s.topCount} / ${s.nValid})">${s.topVal} ${s.topPct}%</span>`;
+    }
+
+    const missBar = miss > 0
+      ? `<span class="ds-miss" title="${miss} missing (${missPct.toFixed(1)}%)">
+           <span class="ds-miss-fill" style="width:${Math.min(100, Math.max(3, missPct)).toFixed(1)}%"></span>
+           <span class="ds-miss-val">${miss}</span>
+         </span>`
+      : '';
+
+    const hEsc = escHtml(h);
+    const hAttr = hEsc.replace(/'/g, '&#39;');
+    html += `<div class="ds-col" data-col="${hAttr}">
+      <div class="ds-col-head">
+        <span class="ds-col-name" title="${hAttr}">${hEsc}</span>
+        ${roleBadge}
+        <span class="ds-col-type${canToggle ? ' ds-col-toggle' : ''}"
+          ${canToggle ? `onclick="toggleColType('${h.replace(/'/g, "\\'")}')" title="Click to toggle numeric ↔ categorical"` : `title="${isNum ? 'numeric' : 'categorical (text)'}"`}
+        >${isNum ? 'num #' : 'cat ●'}</span>
+      </div>
+      <div class="ds-col-body">
+        ${stats}
+        ${missBar}
+      </div>
     </div>`;
   }
-  dsHtml += '</div></div>';
-  ds.innerHTML = dsHtml;
+  html += '</div></div>';
+  ds.innerHTML = html;
+}
+
+function numericStats(rows, col) {
+  let min = Infinity, max = -Infinity, sum = 0, n = 0;
+  for (const r of rows) {
+    const v = Number(r[col]);
+    if (!isFinite(v)) continue;
+    if (v < min) min = v;
+    if (v > max) max = v;
+    sum += v;
+    n++;
+  }
+  return n > 0 ? { min, max, mean: sum / n, n } : null;
+}
+
+function categoricalStats(rows, col) {
+  const counts = Object.create(null);
+  let n = 0;
+  for (const r of rows) {
+    const v = r[col];
+    if (v === '' || v == null) continue;
+    counts[v] = (counts[v] || 0) + 1;
+    n++;
+  }
+  let topVal = null, topCount = 0;
+  for (const [v, c] of Object.entries(counts)) {
+    if (c > topCount) { topVal = v; topCount = c; }
+  }
+  const nUnique = Object.keys(counts).length;
+  if (nUnique === 0) return null;
+  return { nUnique, topVal, topCount, topPct: ((topCount / n) * 100).toFixed(0), nValid: n };
+}
+
+function fmtStat(v) {
+  if (!isFinite(v)) return '—';
+  if (Number.isInteger(v) && Math.abs(v) < 1e6) return String(v);
+  const abs = Math.abs(v);
+  if (abs >= 100) return v.toFixed(0);
+  if (abs >= 10) return v.toFixed(1);
+  if (abs >= 1) return v.toFixed(2);
+  return v.toPrecision(3);
 }
 
 function toggleColType(col) {
