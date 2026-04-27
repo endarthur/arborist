@@ -64,6 +64,7 @@ const MENU_STRUCTURE = [
       { label: 'SQL CASE WHEN', action: () => exportRules('sql') },
       { label: 'CSV with Predictions', action: () => exportCSVPredictions() },
       { type: 'divider' },
+      { label: 'mimic-io JSON (sklearn)', action: () => exportMimicIo() },
       { label: 'Leapfrog .lfcalc', action: () => showLfcalcDialog() },
     ],
   },

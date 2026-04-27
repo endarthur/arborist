@@ -1,12 +1,13 @@
 // Arborist concat build.
 // Reads src/index.html, resolves <!-- INLINE: path --> tokens against src/,
-// writes dist/arborist.html as a single self-contained HTML file.
+// writes the result to ./index.html at the repo root. Root index.html is
+// the canonical single-file artifact: opens from file://, served as-is by
+// GitHub Pages, USB-stickable. The src/ tree is the editable source.
 const fs = require('fs');
 const path = require('path');
 
 const SRC = 'src';
-const DIST = 'dist';
-const OUT = path.join(DIST, 'arborist.html');
+const OUT = 'index.html';
 
 const shell = fs.readFileSync(path.join(SRC, 'index.html'), 'utf8');
 
@@ -20,7 +21,6 @@ const output = shell.replace(
   }
 );
 
-fs.mkdirSync(DIST, { recursive: true });
 fs.writeFileSync(OUT, output);
 
 const kb = (output.length / 1024).toFixed(1);

@@ -115,3 +115,111 @@ function treeToSQL(tree) {
   return sql;
 }
 
+// ═══════════════════════════════════════
+//  MIMIC-IO JSON EXPORT (sklearn-compatible interchange)
+// ═══════════════════════════════════════
+// Flattens the v1 node-graph tree to sklearn's parallel-array layout.
+// Categoricals don't fit sklearn's numeric-threshold model; we add a
+// `category` array as an Arborist extension and the Python shim reads it.
+// Loadable via `arborist_mimic.load(path).predict(X)` (see
+// docs/python-shim/arborist_mimic.py).
+function exportMimicIo() {
+  if (!TREE) { showToast('No tree to export'); return; }
+  const isReg = TREE._mode === 'regression';
+  const featureNames = TREE._features || [];
+  const classNames = isReg ? null : (TREE._classes || []);
+
+  // Two-pass flatten. First pass walks the tree to assign sequential
+  // depth-first indices; second pass fills the parallel arrays.
+  const order = [];
+  function walk(node) {
+    const idx = order.length;
+    order.push({ idx, node, leftIdx: -1, rightIdx: -1 });
+    if (!node.leaf) {
+      const me = order[idx];
+      me.leftIdx = order.length; walk(node.left);
+      me.rightIdx = order.length; walk(node.right);
+    }
+  }
+  walk(TREE);
+
+  const n = order.length;
+  const tree = {
+    node_count: n,
+    children_left:  new Array(n),
+    children_right: new Array(n),
+    feature:        new Array(n),
+    threshold:      new Array(n),
+    category:       new Array(n),
+    value:          new Array(n),
+    impurity:       new Array(n),
+    n_node_samples: new Array(n),
+  };
+
+  for (let i = 0; i < n; i++) {
+    const { node, leftIdx, rightIdx } = order[i];
+    tree.children_left[i]  = node.leaf ? -1 : leftIdx;
+    tree.children_right[i] = node.leaf ? -1 : rightIdx;
+    if (node.leaf) {
+      tree.feature[i]   = -2;
+      tree.threshold[i] = -2;
+      tree.category[i]  = null;
+    } else {
+      tree.feature[i] = featureNames.indexOf(node.split.feature);
+      if (node.split.type === 'numeric') {
+        tree.threshold[i] = node.split.threshold;
+        tree.category[i]  = null;
+      } else {
+        // Categorical split: threshold is meaningless; carry the category
+        // via the Arborist extension. The Python shim picks the right path
+        // when category[i] !== null.
+        tree.threshold[i] = null;
+        tree.category[i]  = node.split.category;
+      }
+    }
+    tree.impurity[i]       = node.gini;
+    tree.n_node_samples[i] = node.n;
+    if (isReg) {
+      tree.value[i] = [Number(node.prediction)];
+    } else {
+      tree.value[i] = classNames.map(c => (node.classCounts && node.classCounts[c]) || 0);
+    }
+  }
+
+  const payload = {
+    format: 'mimic-io',
+    version: 1,
+    algorithm: 'CART',
+    criterion: isReg ? 'variance' : 'gini',
+    mode: isReg ? 'regression' : 'classification',
+    n_features: featureNames.length,
+    n_classes: isReg ? 1 : classNames.length,
+    feature_names: featureNames,
+    class_names: classNames,
+    target_name: TREE._target || null,
+    tree,
+    bonsai: {
+      // Reserved for future bonsai-edit metadata (forced splits, forced
+      // classes, pruned nodes). Not yet tracked through the undo stack.
+      forced_splits: [],
+      forced_classes: {},
+      pruned_nodes: [],
+    },
+    exported_at: new Date().toISOString(),
+  };
+
+  // JSON.stringify drops NaN/Infinity to null by default? No — it actually
+  // emits the literals which are invalid JSON. Replacer handles that.
+  const text = JSON.stringify(payload, (_, v) => {
+    if (typeof v === 'number' && !isFinite(v)) return null;
+    return v;
+  }, 2);
+
+  const blob = new Blob([text], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (TREE._target || 'arborist_tree') + '.mimic-io.json';
+  a.click();
+  showToast(`mimic-io JSON exported · ${n} nodes`);
+}
+
