@@ -4,7 +4,7 @@
 **Date:** 2026-04-19
 **License:** MIT
 **Repository:** github.com/endarthur/arborist
-**Authors:** Arthur Endlein Correia, Jessica (Seequent)
+**Authors:** Arthur Endlein Correia, Jéssica da Matta (Seequent)
 **Presentation:** II Simpósio de Geometalurgia, Gramado, May 2026 (oral session)
 
 ---

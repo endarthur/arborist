@@ -8145,7 +8145,40 @@ function showHelp() {
       <br><br>
       Pedregosa, F. et al. (2011). Scikit-learn: Machine Learning in Python. <em>Journal of Machine Learning Research</em>, 12, pp. 2825–2830.
     </p>
-    <p style="color:var(--text-faint); font-size:0.58rem; margin-top:0.6rem;">Arborist v0.1.0 · Geoscientific Chaos Union · © 2026 Arthur Endlein · MIT License</p>
+    <p style="color:var(--text-faint); font-size:0.58rem; margin-top:0.6rem;">Arborist v0.2.0 · Geoscientific Chaos Union · © 2026 Arthur Endlein Correia, Jéssica da Matta · MIT License</p>
+  `;
+}
+
+function showAbout() {
+  const host = openFloatingPanel('about', { title: 'About Arborist', width: 460, height: 400 });
+  if (!host) return;
+  host.innerHTML = `
+    <div style="text-align:center;margin-bottom:0.8rem;">
+      <div style="font-family:var(--display);font-size:1.4rem;font-weight:900;color:var(--text);letter-spacing:-0.02em;">
+        🌳 Arbor<span style="color:var(--green);">ist</span>
+      </div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text-faint);letter-spacing:0.06em;text-transform:uppercase;margin-top:0.2rem;">
+        Decision Tree Cultivator · v0.2.0
+      </div>
+    </div>
+    <h4>Authors</h4>
+    <p>Arthur Endlein Correia · Jéssica da Matta</p>
+    <p style="color:var(--text-faint);font-size:0.6rem;">Geoscientific Chaos Union</p>
+
+    <h4>Repository</h4>
+    <p><a href="https://github.com/endarthur/arborist" target="_blank" style="color:var(--green);">github.com/endarthur/arborist</a></p>
+    <p style="color:var(--text-faint);font-size:0.6rem;">DOI: pending first release</p>
+
+    <h4>License</h4>
+    <p>MIT © 2026 Arthur Endlein Correia, Jéssica da Matta</p>
+
+    <h4>Built on</h4>
+    <ul style="font-size:0.62rem;">
+      <li>dockview-core 5.2.0 (MIT) — panel layout</li>
+      <li>three.js r160 (MIT) + OrbitControls — 3D scatter</li>
+      <li>@gcu/dee (MIT) — geoscientific 3D scene wrapper</li>
+      <li>pollywog (vendored) — Leapfrog .lfcalc serialiser</li>
+    </ul>
   `;
 }
 
@@ -8589,7 +8622,7 @@ Click below to open the import dialog and try pasting a CASE WHEN block.`,
 <strong>Reference:</strong>
 <br>Breiman, L., Friedman, J.H., Olshen, R.A. and Stone, C.J. (1984). <em>Classification and Regression Trees</em>. Wadsworth & Brooks/Cole, Monterey, CA. ISBN 978-0-412-04841-8.
 <br><br>
-<em style="color:var(--text-faint);">© 2026 Arthur Endlein · MIT License · Geoscientific Chaos Union</em>`,
+<em style="color:var(--text-faint);">© 2026 Arthur Endlein Correia, Jéssica da Matta · MIT License · Geoscientific Chaos Union</em>`,
     actions: [{ label: '⛏ Reload Iron Ore Classification', fn: () => { loadExample('ironore'); setTimeout(zoomFit, 60); } }],
   },
   {
@@ -10526,7 +10559,7 @@ const MENU_STRUCTURE = [
       { label: 'Guided Workshop', action: () => startWorkshop() },
       { label: 'Help & Guide', action: () => showHelp() },
       { type: 'divider' },
-      { label: 'About / GitHub', action: () => window.open('https://github.com/endarthur/arborist', '_blank') },
+      { label: 'About Arborist…', action: () => showAbout() },
     ],
   },
 ];

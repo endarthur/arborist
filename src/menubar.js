@@ -75,7 +75,7 @@ const MENU_STRUCTURE = [
       { label: 'Guided Workshop', action: () => startWorkshop() },
       { label: 'Help & Guide', action: () => showHelp() },
       { type: 'divider' },
-      { label: 'About / GitHub', action: () => window.open('https://github.com/endarthur/arborist', '_blank') },
+      { label: 'About Arborist…', action: () => showAbout() },
     ],
   },
 ];

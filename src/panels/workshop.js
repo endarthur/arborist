@@ -402,7 +402,7 @@ Click below to open the import dialog and try pasting a CASE WHEN block.`,
 <strong>Reference:</strong>
 <br>Breiman, L., Friedman, J.H., Olshen, R.A. and Stone, C.J. (1984). <em>Classification and Regression Trees</em>. Wadsworth & Brooks/Cole, Monterey, CA. ISBN 978-0-412-04841-8.
 <br><br>
-<em style="color:var(--text-faint);">© 2026 Arthur Endlein · MIT License · Geoscientific Chaos Union</em>`,
+<em style="color:var(--text-faint);">© 2026 Arthur Endlein Correia, Jéssica da Matta · MIT License · Geoscientific Chaos Union</em>`,
     actions: [{ label: '⛏ Reload Iron Ore Classification', fn: () => { loadExample('ironore'); setTimeout(zoomFit, 60); } }],
   },
   {
